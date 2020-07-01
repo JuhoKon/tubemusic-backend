@@ -35,7 +35,7 @@ const handleScrape = async (term, counter) => {
         //try again
         console.log("Trying again..");
         console.log(term);
-        await timeout(100);
+        await timeout(300);
         return handleScrape(term, counter++);
       } else {
         return null;
@@ -101,7 +101,7 @@ exports.scrape = async function (req, res, next) {
     term = term.split(" ").join("+");
     term = string.concat(term);
 
-    await timeout(60); //Delay so we won't get problems with too many requests to the page
+    await timeout(100); //Delay so we won't get problems with too many requests to the page
 
     promises.push(handleScrape(term, 0));
   }
