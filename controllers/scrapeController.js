@@ -1,25 +1,27 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
-
+const puppeteer = require("puppeteer");
 const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 //TODO: handle if there are no results found
-const handleScrape = async (term, counter) => {
+const handleScrape = async (browser, term, counter) => {
   try {
     let url = encodeURI(term);
-    let response = await request(url).catch(async (e) => {
-      console.log(e);
-      await timeout(2500);
-      return handleScrape(term, counter);
-    }); //mby add catch here? .catch(err => console.log(err));
 
-    let $ = await cheerio.load(response);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    let bodyHTML = await page.evaluate(() => document.body.innerHTML);
+    let $ = await cheerio.load(bodyHTML);
     let videoTime = null;
-    if (typeof $('[class="yt-lockup-title "]')[0] !== "undefined") {
-      let data = $('[class="yt-lockup-title "]')[0].children[0].attribs;
-      if (typeof $('[class="video-time"]')[0] !== "undefined") {
-        videoTime = $('[class="video-time"]')[0].children[0].data;
-      }
-      //console.log(data.href, data.title, videoTime);
+    if (
+      typeof $(
+        $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]')[0] !==
+          "undefined"
+      )
+    ) {
+      let data = $(
+        '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
+      )[0].attribs;
+      console.log(data.href, data.title, videoTime);
       //add retry when connection is lost
 
       return {
@@ -36,7 +38,7 @@ const handleScrape = async (term, counter) => {
         console.log("Trying again..");
         console.log(term);
         await timeout(300);
-        return handleScrape(term, counter++);
+        return handleScrape(term, counter + 1);
       } else {
         return null;
       }
@@ -48,7 +50,9 @@ const handleScrape = async (term, counter) => {
 
 exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
-
+  const browser = await puppeteer.launch({
+    headless: true,
+  });
   let string = "https://www.youtube.com/results?search_query=";
   let term = req.query.item;
   term = term.replace("&", "");
@@ -56,18 +60,29 @@ exports.searchScrape = async function (req, res, next) {
   term = string.concat(term);
   let url = encodeURI(term);
   console.log(url);
-  let response = await request(url);
-  let $ = cheerio.load(response);
+  const page = await browser.newPage();
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  let bodyHTML = await page.evaluate(() => document.body.innerHTML);
+  let $ = await cheerio.load(bodyHTML);
   let timeArray = [];
   let dataArray = [];
-  let data = $('[class="yt-lockup-title "]');
+
   let videoTime = $('[class="video-time"]');
   let href = {};
   let title = {};
-  for (let i = 0; i < data.length - 3; i++) {
-    if (typeof data[i] !== "undefined") {
-      href = data[i].children[0].attribs.href;
-      title = data[i].children[0].attribs.title;
+  let data = $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]');
+  console.log(data.length);
+  for (let i = 0; i < data.length; i++) {
+    if (
+      typeof $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]')[
+        i
+      ] !== "undefined"
+    ) {
+      let data = $(
+        '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
+      )[i].attribs;
+      href = data.href;
+      title = data.title;
       if (href[1] === "w") {
         dataArray.push({
           videoId: href.split("v=")[1],
@@ -91,6 +106,9 @@ exports.searchScrape = async function (req, res, next) {
 };
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
+  const browser = await puppeteer.launch({
+    headless: true,
+  });
   let tracks = req.body.items;
   let promises = [];
   let string = "https://www.youtube.com/results?search_query=";
@@ -103,7 +121,7 @@ exports.scrape = async function (req, res, next) {
 
     await timeout(100); //Delay so we won't get problems with too many requests to the page
 
-    promises.push(handleScrape(term, 0));
+    promises.push(handleScrape(browser, term, 0));
   }
   Promise.all(promises)
     .then((results) => {

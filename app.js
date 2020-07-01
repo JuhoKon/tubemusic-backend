@@ -42,7 +42,8 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-var mongoURL = process.env.MONGO_URL;
+var mongoURL =
+  "mongodb+srv://newuser1234:GZpGTYpBP4Cggxdc@cluster0-n7w4j.mongodb.net/test?retryWrites=true&w=majority";
 //var mongoURL =
 //  "mongodb+srv://newuser123:jtLiGwVrgP2C9rNl@cluster0-n7w4j.mongodb.net/test?retryWrites=true&w=majority";
 // Connecting to mongoose
