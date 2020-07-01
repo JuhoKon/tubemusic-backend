@@ -52,6 +52,7 @@ exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
   const browser = await puppeteer.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   let string = "https://www.youtube.com/results?search_query=";
   let term = req.query.item;
