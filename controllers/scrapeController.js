@@ -109,6 +109,7 @@ exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
   const browser = await puppeteer.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   let tracks = req.body.items;
   let promises = [];
