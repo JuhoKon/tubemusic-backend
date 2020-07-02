@@ -41,7 +41,7 @@ const handleScrape = async (browser, term, counter) => {
       if (typeof test[0] !== "undefined") {
         let videoTime2 = test[0].children[2].attribs["aria-label"];
         let splitted = videoTime2.split(" ");
-        let seconds = splitted[3];
+        let seconds = splitted[2];
         if (seconds.length === 1) {
           seconds = "0" + seconds;
         }
