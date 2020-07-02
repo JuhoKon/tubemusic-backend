@@ -83,7 +83,7 @@ exports.searchScrape = async function (req, res, next) {
     console.log(url);
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 768 });
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.goto(url, { waitUntil: "networkidle2" });
     let bodyHTML = await page.evaluate(() => document.body.innerHTML);
     await page.close();
     await browser.close();
