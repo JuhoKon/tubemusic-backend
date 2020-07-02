@@ -37,9 +37,15 @@ const handleScrape = async (browser, term, counter) => {
       )[0].attribs;
 
       //add retry when connection is lost
-      let test = $('[class="style-scope ytd-child-video-renderer"]');
+      let test = $("ytd-thumbnail-overlay-time-status-renderer");
       if (typeof test[0] !== "undefined") {
-        videoTime = test[1].childNodes[0].data;
+        let videoTime2 = test[0].children[2].attribs["aria-label"];
+        let splitted = videoTime2.split(" ");
+        let seconds = splitted[3];
+        if (seconds.length === 1) {
+          seconds = "0" + seconds;
+        }
+        videoTime = splitted[0] + "." + seconds;
       }
       console.log(data.href, data.title, videoTime);
       return {
@@ -91,7 +97,8 @@ exports.searchScrape = async function (req, res, next) {
     let timeArray = [];
     let dataArray = [];
 
-    let videoTime = $('[class="video-time"]');
+    let videoTime = $("ytd-thumbnail-overlay-time-status-renderer");
+
     let href = {};
     let title = {};
     let data = $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]');
@@ -116,8 +123,10 @@ exports.searchScrape = async function (req, res, next) {
         }
       }
       if (typeof videoTime[i] !== "undefined") {
-        const videoTime2 = videoTime[i].children[0].data;
-        timeArray.push(videoTime2);
+        let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
+        let splitted = videoTime2.split(" ");
+        let time = splitted[0] + "." + splitted[3];
+        timeArray.push(time);
       }
     }
     let array = dataArray.map((track, index) => ({
@@ -129,8 +138,7 @@ exports.searchScrape = async function (req, res, next) {
     res.json({ array });
   } catch {
     let array = [];
-    await page.close();
-    await browser.close();
+
     res.json({ array });
   }
 };
