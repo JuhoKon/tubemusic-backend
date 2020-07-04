@@ -8,10 +8,10 @@ var playlistSchema = new Schema(
     owner: { type: String, required: true },
     playlist: { type: Array },
     private: { type: Boolean, required: true },
-    genre: { type: String, required: false }
+    genre: { type: String, required: false },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

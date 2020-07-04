@@ -6,4 +6,5 @@ var auth = require("../middleware/auth");
 
 router.post("/scrape", auth, scrape_controller.scrape);
 router.get("/search", auth, scrape_controller.searchScrape);
+
 module.exports = router;

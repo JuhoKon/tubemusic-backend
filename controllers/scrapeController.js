@@ -1,13 +1,18 @@
 const request = require("request-promise");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
+const stringSimilarity = require("string-similarity");
 const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const Song = require("../models/song.model");
 //TODO: handle if there are no results found
 const handleScrape = async (browser, term, counter) => {
   try {
+    await timeout(1000);
     let url = encodeURI(term);
-
+    //console.log(url);
     const page = await browser.newPage();
+    //console.log("new page?");
     await page.setViewport({ width: 1366, height: 768 });
     await page.setRequestInterception(true);
     page.on("request", (req) => {
@@ -21,39 +26,87 @@ const handleScrape = async (browser, term, counter) => {
         req.continue();
       }
     });
+    //console.log("Before goto");
+    //console.log(url);
+    await timeout(300);
     await page.goto(url, { waitUntil: "networkidle2" });
+    //console.log("After goto");
     let bodyHTML = await page.evaluate(() => document.body.innerHTML);
     let $ = await cheerio.load(bodyHTML);
+    let timeArray = [];
+    let dataArray = [];
+
+    let videoTime = $("ytd-thumbnail-overlay-time-status-renderer");
+
+    let href = {};
+    let title = {};
+    let data = $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]');
+    console.log(data.length);
     await page.close();
-    let videoTime = null;
     if (
       typeof $(
         $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]')[0] !==
           "undefined"
       )
     ) {
-      let data = $(
-        '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
-      )[0].attribs;
-
-      //add retry when connection is lost
-      let test = $("ytd-thumbnail-overlay-time-status-renderer");
-      if (typeof test[0] !== "undefined") {
-        let videoTime2 = test[0].children[2].attribs["aria-label"];
-        let splitted = videoTime2.split(" ");
-        let seconds = splitted[2];
-        if (seconds.length === 1) {
-          seconds = "0" + seconds;
+      for (let i = 0; i < data.length; i++) {
+        if (
+          typeof $(
+            '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
+          )[i] !== "undefined"
+        ) {
+          let data = $(
+            '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
+          )[i].attribs;
+          href = data.href;
+          title = data.title;
+          if (href[1] === "w") {
+            dataArray.push({
+              videoId: href.split("v=")[1],
+              title: title,
+              uniqueId: Math.random(),
+            });
+          }
         }
-        videoTime = splitted[0] + "." + seconds;
+        if (typeof videoTime[i] !== "undefined") {
+          let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
+          let splitted = videoTime2.split(" ");
+          let seconds = splitted[3];
+          if (seconds.length === 1) {
+            seconds = "0" + seconds;
+          }
+          let time = splitted[0] + "." + seconds;
+          timeArray.push(time);
+        }
       }
-      console.log(data.href, data.title, videoTime);
+      let array = dataArray.map((track, index) => ({
+        title: track.title,
+        uniqueId: track.uniqueId,
+        videoId: track.videoId,
+        duration: timeArray[index],
+      }));
+      for (const [i, obj] of array.entries()) {
+        let song = new Song({
+          title: obj.title,
+          uniqueId: obj.uniqueId,
+          videoId: obj.videoId,
+          duration: timeArray[i],
+        });
+        song
+          .save()
+          .then()
+          .catch((e) => {
+            let error = e;
+          }); //errors come when we have videos in collections that we already have. no biggies
+      }
+      console.log(array[0]);
+      await timeout(200);
       return {
-        videoId: data.href.split("v=")[1],
-        title: data.title,
-        duration: videoTime,
+        videoId: array[0].videoId,
+        title: array[0].title,
+        duration: array[0].duration,
         scraped: true,
-        uniqueId: Math.random(),
+        uniqueId: array[0].uniqueId,
         date: Date.now(),
       };
     } else {
@@ -62,14 +115,14 @@ const handleScrape = async (browser, term, counter) => {
         console.log("Trying again..");
         console.log(term);
         await timeout(300);
-        return handleScrape(term, counter + 1);
+        return null;
+        //eturn handleScrape(term, counter + 1);
       } else {
         return null;
       }
     }
   } catch (err) {
-    await page.close();
-    throw err;
+    console.log("we had an error: ", err);
   }
 };
 
@@ -77,7 +130,7 @@ exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
   try {
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: false,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     let string = "https://www.youtube.com/results?search_query=";
@@ -86,7 +139,7 @@ exports.searchScrape = async function (req, res, next) {
     term = term.split(" ").join("+");
     term = string.concat(term);
     let url = encodeURI(term);
-    console.log(url);
+    //console.log(url);
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 768 });
     await page.goto(url, { waitUntil: "networkidle2" });
@@ -125,7 +178,11 @@ exports.searchScrape = async function (req, res, next) {
       if (typeof videoTime[i] !== "undefined") {
         let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
         let splitted = videoTime2.split(" ");
-        let time = splitted[0] + "." + splitted[3];
+        let seconds = splitted[3];
+        if (seconds.length === 1) {
+          seconds = "0" + seconds;
+        }
+        let time = splitted[0] + "." + seconds;
         timeArray.push(time);
       }
     }
@@ -135,6 +192,18 @@ exports.searchScrape = async function (req, res, next) {
       videoId: track.videoId,
       duration: timeArray[index],
     }));
+    for (const [i, obj] of array.entries()) {
+      let song = new Song({
+        title: obj.title,
+        uniqueId: obj.uniqueId,
+        videoId: obj.videoId,
+        duration: timeArray[i],
+      });
+      song
+        .save()
+        .then(console.log())
+        .catch((e) => console.log()); //errors come when we have videos in collections that we already have. no biggies
+    }
     res.json({ array });
   } catch {
     let array = [];
@@ -144,6 +213,9 @@ exports.searchScrape = async function (req, res, next) {
 };
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
+  let globalTerm = "";
+  let found = false;
+  //await timeout(200);
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -151,24 +223,140 @@ exports.scrape = async function (req, res, next) {
   let tracks = req.body.items;
   let promises = [];
   let string = "https://www.youtube.com/results?search_query=";
+  let foundItems;
+  console.log(tracks.length);
   for (let i = 0; i < tracks.length; i++) {
+    found = false;
+    foundItems = null;
     let artistName = tracks[i].artistName;
     let title = tracks[i].title;
     let term = title + " " + artistName; //need to think about how to improve
+    globalTerm = term;
+    let fullTitle = title + " " + artistName;
     term = term.split(" ").join("+");
     term = string.concat(term);
 
-    await timeout(100); //Delay so we won't get problems with too many requests to the page
+    let prevSimilarity = 0;
+    let similarity = 0;
+    let winnerIndex = 0;
+    //await timeout(100); //Delay so we won't get problems with too many requests to the page
+    //console.log("SEARCH: ", fullTitle);
+    await Song.find({ $text: { $search: fullTitle } }, function (err, docs) {
+      found = true;
+      foundItems = docs;
 
-    promises.push(handleScrape(browser, term, 0));
+      for (let j = 0; j < foundItems.length; j++) {
+        //TODO: check for foundItems[j].videoId
+        //if not found do something?
+        //console.log(foundItems[j].title);
+        for (let i = 0; i < 3; i++) {
+          switch (i) {
+            case 1:
+              similarity = stringSimilarity.compareTwoStrings(
+                foundItems[j].title,
+                fullTitle
+              );
+              if (similarity > prevSimilarity) {
+                prevSimilarity = similarity;
+                winnerIndex = j;
+              }
+              break;
+            case 2:
+              similarity = stringSimilarity.compareTwoStrings(
+                foundItems[j].title,
+                fullTitle + " (Official Video)"
+              );
+              if (similarity > prevSimilarity) {
+                prevSimilarity = similarity;
+                winnerIndex = j;
+              }
+              break;
+            case 3:
+              similarity = stringSimilarity.compareTwoStrings(
+                foundItems[j].title,
+                fullTitle + " (Lyrics)"
+              );
+              if (similarity > prevSimilarity) {
+                prevSimilarity = similarity;
+                winnerIndex = j;
+              }
+              break;
+          }
+        }
+      }
+      console.log(prevSimilarity + " belong to index: " + winnerIndex);
+      //console.log(fullTitle);
+      //console.log(foundItems[winnerIndex]);
+
+      //TODO: check for foundItems[j].videoId
+      //if not found do something?
+      //
+
+      if (prevSimilarity >= 0.75) {
+        var prom2 = new Promise(async function (resolve, reject) {
+          // Do Stuff
+          try {
+            let videoId = foundItems[winnerIndex].videoId;
+            let title = foundItems[winnerIndex].title;
+            let duration = foundItems[winnerIndex].duration;
+            let scraped = true;
+            let uniqueId = foundItems[winnerIndex].uniqueId;
+            let date = Date.now();
+            //await timeout(2000);
+            if (
+              typeof foundItems[winnerIndex] === "undefined" ||
+              typeof foundItems[winnerIndex].videoId === "undefined"
+            ) {
+              console.log("We encountered an error!");
+              let res = await handleScrape(browser, term, 0);
+              resolve(res);
+              //return null; //here call scraper? somehow return a resolve from that?
+            } else {
+              resolve({
+                videoId: videoId,
+                title: title,
+                duration: duration,
+                scraped: scraped,
+                uniqueId: uniqueId,
+                date: date,
+              });
+            }
+          } catch {
+            console.log("We encountered an error!");
+            let res = await handleScrape(browser, term, 0);
+            resolve(res);
+          }
+        });
+        console.log("Database sending");
+        console.log(prom2);
+        found = true;
+        promises.push(prom2);
+        // array.push('two');
+      } else {
+        console.log("Scraper sending.");
+        promises.push(handleScrape(browser, term, 0));
+      }
+
+      if (err) {
+        console.log("WE HAVE ERROR?");
+
+        promises.push(handleScrape(browser, term, 0));
+      }
+    })
+      .limit(20)
+      .catch((e) => console.log("We got error here"));
   }
-
+  await timeout(2000);
   Promise.all(promises)
     .then(async (results) => {
+      console.log("Promises OK");
+      await timeout(500);
       await browser.close();
+      console.log("Sending: ", results.length);
       res.json(results);
     })
     .catch(async (e) => {
+      console.log("Error from all promsies");
       await browser.close();
       res.json(e);
     });
