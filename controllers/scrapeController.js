@@ -71,7 +71,7 @@ const handleScrape = async (browser, term, counter) => {
         if (typeof videoTime[i] !== "undefined") {
           let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
           let splitted = videoTime2.split(" ");
-          let seconds = splitted[3];
+          let seconds = splitted[2];
           if (seconds.length === 1) {
             seconds = "0" + seconds;
           }
@@ -130,7 +130,7 @@ exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
   try {
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     let string = "https://www.youtube.com/results?search_query=";
@@ -178,7 +178,7 @@ exports.searchScrape = async function (req, res, next) {
       if (typeof videoTime[i] !== "undefined") {
         let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
         let splitted = videoTime2.split(" ");
-        let seconds = splitted[3];
+        let seconds = splitted[2];
         if (seconds.length === 1) {
           seconds = "0" + seconds;
         }
@@ -360,4 +360,14 @@ exports.scrape = async function (req, res, next) {
       await browser.close();
       res.json(e);
     });
+};
+exports.searchScrape_database = async function (req, res, next) {
+  let term = req.query.item;
+  console.log(term);
+  Song.find({ $text: { $search: term } }, function (err, docs) {
+    console.log(docs);
+    res.json({ array: docs });
+  })
+    .limit(20)
+    .catch((e) => res.json({ error: e }));
 };
