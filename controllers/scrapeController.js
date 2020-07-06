@@ -60,37 +60,45 @@ const handleScrape = async (browser, term, counter) => {
           )[i].attribs;
           href = data.href;
           title = data.title;
+          arialabel = data["aria-label"];
           if (href[1] === "w") {
+            let seconds = "";
+            let minutes = "";
+            let splitted = arialabel.split(" ");
+            for (let i = splitted.length - 2; i > 0; i--) {
+              if (isNaN(splitted[i])) {
+                //isnt number
+                minutes = splitted[i - 4]; //i-4 for english?
+                seconds = splitted[i - 2];
+                break;
+              }
+            }
+            if (seconds.length === 1) {
+              seconds = "0" + seconds;
+            }
+            let time = minutes + "." + seconds;
             dataArray.push({
               videoId: href.split("v=")[1],
               title: title,
               uniqueId: Math.random(),
+              duration: time,
             });
           }
         }
-        if (typeof videoTime[i] !== "undefined") {
-          let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
-          let splitted = videoTime2.split(" ");
-          let seconds = splitted[2];
-          if (seconds.length === 1) {
-            seconds = "0" + seconds;
-          }
-          let time = splitted[0] + "." + seconds;
-          timeArray.push(time);
-        }
       }
+
       let array = dataArray.map((track, index) => ({
         title: track.title,
         uniqueId: track.uniqueId,
         videoId: track.videoId,
-        duration: timeArray[index],
+        duration: track.duration,
       }));
       for (const [i, obj] of array.entries()) {
         let song = new Song({
           title: obj.title,
           uniqueId: obj.uniqueId,
           videoId: obj.videoId,
-          duration: timeArray[i],
+          duration: obj.duration,
         });
         song
           .save()
@@ -167,42 +175,51 @@ exports.searchScrape = async function (req, res, next) {
         )[i].attribs;
         href = data.href;
         title = data.title;
+        arialabel = data["aria-label"];
         if (href[1] === "w") {
+          let seconds = "";
+          let minutes = "";
+          let splitted = arialabel.split(" ");
+          for (let i = splitted.length - 2; i > 0; i--) {
+            if (isNaN(splitted[i])) {
+              //isnt number
+              minutes = splitted[i - 4]; //i-3 for english?
+              seconds = splitted[i - 2];
+              break;
+            }
+          }
+          if (seconds.length === 1) {
+            seconds = "0" + seconds;
+          }
+          let time = minutes + "." + seconds;
           dataArray.push({
             videoId: href.split("v=")[1],
             title: title,
             uniqueId: Math.random(),
+            duration: time,
           });
         }
-      }
-      if (typeof videoTime[i] !== "undefined") {
-        let videoTime2 = videoTime[i].children[2].attribs["aria-label"];
-        let splitted = videoTime2.split(" ");
-        let seconds = splitted[2];
-        if (seconds.length === 1) {
-          seconds = "0" + seconds;
-        }
-        let time = splitted[0] + "." + seconds;
-        timeArray.push(time);
       }
     }
     let array = dataArray.map((track, index) => ({
       title: track.title,
       uniqueId: track.uniqueId,
       videoId: track.videoId,
-      duration: timeArray[index],
+      duration: track.duration,
     }));
     for (const [i, obj] of array.entries()) {
       let song = new Song({
         title: obj.title,
         uniqueId: obj.uniqueId,
         videoId: obj.videoId,
-        duration: timeArray[i],
+        duration: obj.duration,
       });
       song
         .save()
-        .then(console.log())
-        .catch((e) => console.log()); //errors come when we have videos in collections that we already have. no biggies
+        .then()
+        .catch((e) => {
+          let error = e;
+        }); //errors come when we have videos in collections that we already have. no biggies
     }
     res.json({ array });
   } catch {

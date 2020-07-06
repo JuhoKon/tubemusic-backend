@@ -1,44 +1,44 @@
 var Playlist = require("../models/playlist.model");
 var User = require("../models/user.model");
-exports.index = function(req, res, next) {
+exports.index = function (req, res, next) {
   Playlist.find()
     .select("-playlist")
-    .then(Playlist => {
+    .then((Playlist) => {
       //console.log(Playlist);
       res.json({ Playlist: Playlist });
     }) //return playlists name + id
-    .catch(err => res.status(400).json("Error: " + err));
+    .catch((err) => res.status(400).json("Error: " + err));
 };
-exports.create = function(req, res, next) {
+exports.create = function (req, res, next) {
   var playlist = new Playlist({
     name: req.body.name,
     playlist: req.body.playlist,
     private: req.body.isPrivate,
     owner: req.body.owner,
-    genre: req.body.genre
+    genre: req.body.genre,
   });
   playlist
     .save()
-    .then(data => {
+    .then((data) => {
       res.json(data);
     })
-    .catch(err => res.status(400).json(err));
+    .catch((err) => res.status(400).json(err));
 };
-exports.findByID = function(req, res, next) {
+exports.findByID = function (req, res, next) {
   //console.log(req.params.id);
   if (!req.params.id) {
     return res.status(400).json({ error: "Id not submitted" });
   }
   Playlist.findById(req.params.id)
-    .then(playlist => res.json(playlist))
-    .catch(err => res.status(400).json("Error:" + err));
+    .then((playlist) => res.json(playlist))
+    .catch((err) => res.status(400).json("Error:" + err));
 };
-exports.updatebyID = function(req, res, next) {
+exports.updatebyID = function (req, res, next) {
   if (!req.body.name || !req.body.playlist) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
   //console.log(req.body);
-  Playlist.findById(req.params.id).then(playlist => {
+  Playlist.findById(req.params.id).then((playlist) => {
     (playlist.name = req.body.name),
       (playlist.playlist = req.body.playlist),
       (playlist.private = req.body.private),
@@ -46,11 +46,27 @@ exports.updatebyID = function(req, res, next) {
     playlist
       .save()
       .then(() => res.json(playlist))
-      .catch(err => res.status(400).json({ error: err }));
+      .catch((err) => res.status(400).json({ error: err }));
   });
   // console.log(req.params.id);
 };
-exports.deletebyID = function(req, res, next) {
+exports.updatetime = function (req, res, next) {
+  if (!req.body.videoId || !req.body.duration) {
+    return res.status(400).json({ error: "Please enter all fields" });
+  }
+  Playlist.findById(req.params.id).then((playlist) => {
+    for (let i = 0; i < playlist.playlist.length; i++) {
+      if (playlist.playlist[i].videoId === req.body.videoId) {
+        console.log(playlist.playlist[i].duration);
+        playlist.playlist[i].duration = req.body.duration;
+        break;
+      }
+    }
+    playlist.markModified("playlist"); //very important.....
+    playlist.save().then(res.json({ status: "OK" }));
+  });
+};
+exports.deletebyID = function (req, res, next) {
   if (req.user.role !== "Admin") {
     return res
       .status(401)
@@ -60,13 +76,13 @@ exports.deletebyID = function(req, res, next) {
     .then(() => {
       next();
     })
-    .catch(err => res.status(400).json({ error: err }));
+    .catch((err) => res.status(400).json({ error: err }));
 };
-exports.deletebyIDHelper = function(req, res, next) {
+exports.deletebyIDHelper = function (req, res, next) {
   User.updateMany(
     {},
     { $pull: { playlists: { _id: req.params.id } } },
-    function(err, data) {
+    function (err, data) {
       if (err) return res.status(400).json({ error: err });
       res.json("Playlist deleted.");
     }
