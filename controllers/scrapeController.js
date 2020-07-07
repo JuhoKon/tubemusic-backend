@@ -68,7 +68,7 @@ const handleScrape = async (browser, term, counter) => {
             for (let i = splitted.length - 2; i > 0; i--) {
               if (isNaN(splitted[i])) {
                 //isnt number
-                minutes = splitted[i - 5]; //i-4 for english?
+                minutes = splitted[i - 4]; //i-4 for english?
                 seconds = splitted[i - 2];
                 break;
               }
@@ -183,7 +183,7 @@ exports.searchScrape = async function (req, res, next) {
           for (let i = splitted.length - 2; i > 0; i--) {
             if (isNaN(splitted[i])) {
               //isnt number
-              minutes = splitted[i - 5]; //i-3 for english?
+              minutes = splitted[i - 4]; //i-3 for english?
               seconds = splitted[i - 2];
               break;
             }
