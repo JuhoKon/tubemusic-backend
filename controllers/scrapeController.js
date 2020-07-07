@@ -49,7 +49,7 @@ const handleScrape = async (browser, term, counter) => {
           "undefined"
       )
     ) {
-      for (let i = 0; i < data.length; i++) {
+      for (let i = 0; i < data.length / 3; i++) {
         if (
           typeof $(
             '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
@@ -68,7 +68,7 @@ const handleScrape = async (browser, term, counter) => {
             for (let i = splitted.length - 2; i > 0; i--) {
               if (isNaN(splitted[i])) {
                 //isnt number
-                minutes = splitted[i - 4]; //i-4 for english?
+                minutes = splitted[i - 5]; //i-4 for english?
                 seconds = splitted[i - 2];
                 break;
               }
@@ -183,7 +183,7 @@ exports.searchScrape = async function (req, res, next) {
           for (let i = splitted.length - 2; i > 0; i--) {
             if (isNaN(splitted[i])) {
               //isnt number
-              minutes = splitted[i - 4]; //i-3 for english?
+              minutes = splitted[i - 5]; //i-3 for english?
               seconds = splitted[i - 2];
               break;
             }
@@ -385,6 +385,13 @@ exports.searchScrape_database = async function (req, res, next) {
     console.log(docs);
     res.json({ array: docs });
   })
-    .limit(20)
+    .limit(50)
     .catch((e) => res.json({ error: e }));
+};
+exports.updateDatabase = async function (req, res, next) {
+  /* WORK IN PROGRESS*/
+  Song.update(
+    { videoTime: { $videoId: req.videoId } },
+    { $inc: { duration: req.body.duration } }
+  );
 };
