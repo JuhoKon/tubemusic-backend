@@ -402,9 +402,9 @@ exports.scrape = async function (req, res, next) {
 };
 exports.searchScrape_database = async function (req, res, next) {
   let term = req.query.item;
-  console.log(term);
+  //console.log(term);
   Song.find({ $text: { $search: term } }, function (err, docs) {
-    console.log(docs);
+    //console.log(docs);
     res.json({ array: docs });
   })
     .limit(50)
