@@ -118,7 +118,7 @@ const handleScrape = async (browser, term, counter, globalTerm) => {
             let error = e;
           }); //errors come when we have videos in collections that we already have. no biggies
       }
-      console.log(array[0]);
+      //console.log(array[0]);
       await timeout(200);
       return {
         videoId: array[0].videoId,
