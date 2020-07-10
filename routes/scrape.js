@@ -7,4 +7,5 @@ var auth = require("../middleware/auth");
 router.post("/scrape", auth, scrape_controller.scrape);
 router.get("/search", auth, scrape_controller.searchScrape);
 router.get("/dbsearch", auth, scrape_controller.searchScrape_database);
+router.get("/autocomplete", auth, scrape_controller.autoCompleteYouTube);
 module.exports = router;

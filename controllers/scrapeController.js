@@ -1,4 +1,5 @@
 const request = require("request-promise");
+const axios = require("axios");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
 const stringSimilarity = require("string-similarity");
@@ -6,7 +7,7 @@ const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const Song = require("../models/song.model");
 //TODO: handle if there are no results found
-const handleScrape = async (browser, term, counter) => {
+const handleScrape = async (browser, term, counter, globalTerm) => {
   try {
     await timeout(1000);
     let url = encodeURI(term);
@@ -49,7 +50,7 @@ const handleScrape = async (browser, term, counter) => {
           "undefined"
       )
     ) {
-      for (let i = 0; i < data.length / 3; i++) {
+      for (let i = 0; i < data.length / 4; i++) {
         if (
           typeof $(
             '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
@@ -99,11 +100,21 @@ const handleScrape = async (browser, term, counter) => {
           uniqueId: obj.uniqueId,
           videoId: obj.videoId,
           duration: obj.duration,
+          term: [globalTerm],
         });
         song
           .save()
           .then()
-          .catch((e) => {
+          .catch(async (e) => {
+            Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
+              song.title = obj.title;
+              song.duration = obj.duration;
+              if (!song.term.includes(globalTerm)) {
+                song.term.push(globalTerm);
+              }
+              song.save();
+            });
+            //console.log(e);
             let error = e;
           }); //errors come when we have videos in collections that we already have. no biggies
       }
@@ -136,6 +147,7 @@ const handleScrape = async (browser, term, counter) => {
 
 exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
+  if (!req.query.item) return res.json({ error: "Error" });
   try {
     const browser = await puppeteer.launch({
       headless: true,
@@ -213,11 +225,21 @@ exports.searchScrape = async function (req, res, next) {
         uniqueId: obj.uniqueId,
         videoId: obj.videoId,
         duration: obj.duration,
+        term: [req.query.item],
       });
-      song
+      await song
         .save()
         .then()
-        .catch((e) => {
+        .catch(async (e) => {
+          Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
+            song.title = obj.title;
+            song.duration = obj.duration;
+            if (!song.term.includes(req.query.item)) {
+              song.term.push(req.query.item);
+            }
+            song.save();
+          });
+          //console.log(e);
           let error = e;
         }); //errors come when we have videos in collections that we already have. no biggies
     }
@@ -325,7 +347,7 @@ exports.scrape = async function (req, res, next) {
               typeof foundItems[winnerIndex].videoId === "undefined"
             ) {
               console.log("We encountered an error!");
-              let res = await handleScrape(browser, term, 0);
+              let res = await handleScrape(browser, term, 0, globalTerm);
               resolve(res);
               //return null; //here call scraper? somehow return a resolve from that?
             } else {
@@ -340,7 +362,7 @@ exports.scrape = async function (req, res, next) {
             }
           } catch {
             console.log("We encountered an error!");
-            let res = await handleScrape(browser, term, 0);
+            let res = await handleScrape(browser, term, 0, globalTerm);
             resolve(res);
           }
         });
@@ -351,13 +373,13 @@ exports.scrape = async function (req, res, next) {
         // array.push('two');
       } else {
         console.log("Scraper sending.");
-        promises.push(handleScrape(browser, term, 0));
+        promises.push(handleScrape(browser, term, 0, globalTerm));
       }
 
       if (err) {
         console.log("WE HAVE ERROR?");
 
-        promises.push(handleScrape(browser, term, 0));
+        promises.push(handleScrape(browser, term, 0, globalTerm));
       }
     })
       .limit(20)
@@ -394,4 +416,26 @@ exports.updateDatabase = async function (req, res, next) {
     { videoTime: { $videoId: req.videoId } },
     { $inc: { duration: req.body.duration } }
   );
+};
+
+exports.autoCompleteYouTube = async function (req, res, next) {
+  const item = req.query.item;
+  let response = await axios.get(
+    `https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q=${item}`
+  );
+
+  if (response) {
+    const searchSuggestions = [];
+    response.data.split("[").forEach((ele, index) => {
+      if (!ele.split('"')[1] || index === 1) return;
+      if (ele.split('"')[1] !== "k") {
+        return searchSuggestions.push({
+          title: ele.split('"')[1],
+          _id: Math.random(),
+        });
+      }
+    });
+    return res.json({ data: searchSuggestions });
+  }
+  return res.status(404).json({ error: "Error getting autocomplete" });
 };
