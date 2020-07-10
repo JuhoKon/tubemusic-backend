@@ -1,5 +1,6 @@
 const request = require("request-promise");
 const axios = require("axios");
+const iconv = require("iconv-lite");
 const cheerio = require("cheerio");
 const puppeteer = require("puppeteer");
 const stringSimilarity = require("string-similarity");
@@ -111,7 +112,10 @@ const handleScrape = async (browser, term, counter, globalTerm) => {
               song.duration = obj.duration;
               if (!song.term.includes(globalTerm)) {
                 song.term.push(globalTerm);
+                console.log("Jes on");
+                console.log(song.term.length);
               }
+              console.log("Jeps");
               song.save();
             });
             //console.log(e);
@@ -331,7 +335,7 @@ exports.scrape = async function (req, res, next) {
       //if not found do something?
       //
 
-      if (prevSimilarity >= 0.75) {
+      if (prevSimilarity >= 1) {
         var prom2 = new Promise(async function (resolve, reject) {
           // Do Stuff
           try {
@@ -420,13 +424,17 @@ exports.updateDatabase = async function (req, res, next) {
 
 exports.autoCompleteYouTube = async function (req, res, next) {
   const item = req.query.item;
+
   let response = await axios.get(
-    `https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q=${item}`
+    `https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q=${item}`,
+    { responseType: "arraybuffer" }
   );
 
   if (response) {
+    data = iconv.decode(response.data, "win1252");
+    console.log(data);
     const searchSuggestions = [];
-    response.data.split("[").forEach((ele, index) => {
+    data.split("[").forEach((ele, index) => {
       if (!ele.split('"')[1] || index === 1) return;
       if (ele.split('"')[1] !== "k") {
         return searchSuggestions.push({
@@ -435,6 +443,7 @@ exports.autoCompleteYouTube = async function (req, res, next) {
         });
       }
     });
+    console.log(searchSuggestions);
     return res.json({ data: searchSuggestions });
   }
   return res.status(404).json({ error: "Error getting autocomplete" });
