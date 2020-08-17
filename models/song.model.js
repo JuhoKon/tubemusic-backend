@@ -9,6 +9,7 @@ var songSchema = new Schema(
     videoId: { type: String, unique: true, required: true },
     duration: { type: String, required: true },
     term: { type: Array, required: true },
+    thumbnails: { type: String },
   },
   {
     timestamps: true,

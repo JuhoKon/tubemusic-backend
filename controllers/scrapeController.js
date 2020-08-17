@@ -8,261 +8,99 @@ const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const Song = require("../models/song.model");
 //TODO: handle if there are no results found
-const handleScrape = async (browser, term, counter, globalTerm) => {
-  try {
-    await timeout(1000);
-    let url = encodeURI(term);
-    //console.log(url);
-    const page = await browser.newPage();
-    //console.log("new page?");
-    await page.setViewport({ width: 1366, height: 768 });
-    await page.setRequestInterception(true);
-    page.on("request", (req) => {
-      if (
-        req.resourceType() == "stylesheet" ||
-        req.resourceType() == "font" ||
-        req.resourceType() == "image"
-      ) {
-        req.abort();
-      } else {
-        req.continue();
-      }
+const handleScrape = async (term, counter, globalTerm) => {
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/search/",
+    {
+      search: term,
+    }
+  );
+  const array = result.data;
+
+  for (const [i, obj] of array.entries()) {
+    let song = new Song({
+      title: obj.title,
+      uniqueId: Math.random(),
+      videoId: obj.videoId,
+      duration: obj.duration,
+      term: [globalTerm],
+      thumbnail: obj.thumbnails[0].url,
     });
-    //console.log("Before goto");
-    //console.log(url);
-    await timeout(300);
-    await page.goto(url, { waitUntil: "networkidle2" });
-    //console.log("After goto");
-    let bodyHTML = await page.evaluate(() => document.body.innerHTML);
-    let $ = await cheerio.load(bodyHTML);
-    let timeArray = [];
-    let dataArray = [];
-
-    let videoTime = $("ytd-thumbnail-overlay-time-status-renderer");
-
-    let href = {};
-    let title = {};
-    let data = $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]');
-    console.log(data.length);
-    await page.close();
-    if (
-      typeof $(
-        $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]')[0] !==
-          "undefined"
-      )
-    ) {
-      for (let i = 0; i < data.length / 4; i++) {
-        if (
-          typeof $(
-            '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
-          )[i] !== "undefined"
-        ) {
-          let data = $(
-            '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
-          )[i].attribs;
-          href = data.href;
-          title = data.title;
-          arialabel = data["aria-label"];
-          if (href[1] === "w") {
-            let seconds = "";
-            let minutes = "";
-            let splitted = arialabel.split(" ");
-            for (let i = splitted.length - 2; i > 0; i--) {
-              if (isNaN(splitted[i])) {
-                //isnt number
-                minutes = splitted[i - 4]; //i-4 for english?
-                seconds = splitted[i - 2];
-                break;
-              }
-            }
-            if (seconds.length === 1) {
-              seconds = "0" + seconds;
-            }
-            let time = minutes + "." + seconds;
-            dataArray.push({
-              videoId: href.split("v=")[1],
-              title: title,
-              uniqueId: Math.random(),
-              duration: time,
-            });
+    song
+      .save()
+      .then()
+      .catch(async (e) => {
+        Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
+          song.title = obj.title;
+          song.duration = obj.duration;
+          if (!song.term.includes(globalTerm)) {
+            song.term.push(globalTerm);
           }
-        }
-      }
 
-      let array = dataArray.map((track, index) => ({
-        title: track.title,
-        uniqueId: track.uniqueId,
-        videoId: track.videoId,
-        duration: track.duration,
-      }));
-      for (const [i, obj] of array.entries()) {
-        let song = new Song({
-          title: obj.title,
-          uniqueId: obj.uniqueId,
-          videoId: obj.videoId,
-          duration: obj.duration,
-          term: [globalTerm],
+          song.save();
         });
-        song
-          .save()
-          .then()
-          .catch(async (e) => {
-            Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
-              song.title = obj.title;
-              song.duration = obj.duration;
-              if (!song.term.includes(globalTerm)) {
-                song.term.push(globalTerm);
-                console.log("Jes on");
-                console.log(song.term.length);
-              }
-              console.log("Jeps");
-              song.save();
-            });
-            //console.log(e);
-            let error = e;
-          }); //errors come when we have videos in collections that we already have. no biggies
-      }
-      //console.log(array[0]);
-      await timeout(200);
-      return {
+
+        let error = e;
+      }); //errors come when we have videos in collections that we already have. no biggies
+  }
+  if (!array[0])
+    console.log("NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND ");
+  return array[0]
+    ? {
         videoId: array[0].videoId,
         title: array[0].title,
         duration: array[0].duration,
         scraped: true,
         uniqueId: array[0].uniqueId,
+        thumbnail: array[0].thumbnails[1].url,
         date: Date.now(),
-      };
-    } else {
-      if (counter < 5) {
-        //try again
-        console.log("Trying again..");
-        console.log(term);
-        await timeout(300);
-        return null;
-        //eturn handleScrape(term, counter + 1);
-      } else {
-        return null;
       }
-    }
-  } catch (err) {
-    console.log("we had an error: ", err);
-  }
+    : {};
 };
 
 exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
   if (!req.query.item) return res.json({ error: "Error" });
-  try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/search/",
+    {
+      search: req.query.item,
+    }
+  );
+  for (const [i, obj] of array.entries()) {
+    let song = new Song({
+      title: obj.title,
+      uniqueId: Math.random(),
+      videoId: obj.videoId,
+      duration: obj.duration,
+      term: [req.query.item],
+      thumbnail: obj.thumbnails[1].url,
     });
-    let string = "https://www.youtube.com/results?search_query=";
-    let term = req.query.item;
-    term = term.replace("&", "");
-    term = term.split(" ").join("+");
-    term = string.concat(term);
-    let url = encodeURI(term);
-    //console.log(url);
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1366, height: 768 });
-    await page.goto(url, { waitUntil: "networkidle2" });
-    let bodyHTML = await page.evaluate(() => document.body.innerHTML);
-    await page.close();
-    await browser.close();
-    let $ = await cheerio.load(bodyHTML);
-    let timeArray = [];
-    let dataArray = [];
-
-    let videoTime = $("ytd-thumbnail-overlay-time-status-renderer");
-
-    let href = {};
-    let title = {};
-    let data = $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]');
-    console.log(data.length);
-    for (let i = 0; i < data.length; i++) {
-      if (
-        typeof $('[class="yt-simple-endpoint style-scope ytd-video-renderer"]')[
-          i
-        ] !== "undefined"
-      ) {
-        let data = $(
-          '[class="yt-simple-endpoint style-scope ytd-video-renderer"]'
-        )[i].attribs;
-        href = data.href;
-        title = data.title;
-        arialabel = data["aria-label"];
-        if (href[1] === "w") {
-          let seconds = "";
-          let minutes = "";
-          let splitted = arialabel.split(" ");
-          for (let i = splitted.length - 2; i > 0; i--) {
-            if (isNaN(splitted[i])) {
-              //isnt number
-              minutes = splitted[i - 4]; //i-3 for english?
-              seconds = splitted[i - 2];
-              break;
-            }
+    await song
+      .save()
+      .then()
+      .catch(async (e) => {
+        Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
+          song.title = obj.title;
+          song.duration = obj.duration;
+          song.thumbnail = obj.thumbnails[1].url;
+          if (!song.term.includes(req.query.item)) {
+            song.term.push(req.query.item);
           }
-          if (seconds.length === 1) {
-            seconds = "0" + seconds;
-          }
-          let time = minutes + "." + seconds;
-          dataArray.push({
-            videoId: href.split("v=")[1],
-            title: title,
-            uniqueId: Math.random(),
-            duration: time,
-          });
-        }
-      }
-    }
-    let array = dataArray.map((track, index) => ({
-      title: track.title,
-      uniqueId: track.uniqueId,
-      videoId: track.videoId,
-      duration: track.duration,
-    }));
-    for (const [i, obj] of array.entries()) {
-      let song = new Song({
-        title: obj.title,
-        uniqueId: obj.uniqueId,
-        videoId: obj.videoId,
-        duration: obj.duration,
-        term: [req.query.item],
-      });
-      await song
-        .save()
-        .then()
-        .catch(async (e) => {
-          Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
-            song.title = obj.title;
-            song.duration = obj.duration;
-            if (!song.term.includes(req.query.item)) {
-              song.term.push(req.query.item);
-            }
-            song.save();
-          });
-          //console.log(e);
-          let error = e;
-        }); //errors come when we have videos in collections that we already have. no biggies
-    }
-    res.json({ array });
-  } catch {
-    let array = [];
-
-    res.json({ array });
+          song.save();
+        });
+        //console.log(e);
+        let error = e;
+      }); //errors come when we have videos in collections that we already have. no biggies
   }
+  res.json({ array });
 };
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
   let globalTerm = "";
   let found = false;
   //await timeout(200);
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+
   let tracks = req.body.items;
   let promises = [];
   let string = "https://www.youtube.com/results?search_query=";
@@ -328,14 +166,8 @@ exports.scrape = async function (req, res, next) {
         }
       }
       console.log(prevSimilarity + " belong to index: " + winnerIndex);
-      //console.log(fullTitle);
-      //console.log(foundItems[winnerIndex]);
 
-      //TODO: check for foundItems[j].videoId
-      //if not found do something?
-      //
-
-      if (prevSimilarity >= 1) {
+      if (prevSimilarity >= 0.75) {
         var prom2 = new Promise(async function (resolve, reject) {
           // Do Stuff
           try {
@@ -351,7 +183,7 @@ exports.scrape = async function (req, res, next) {
               typeof foundItems[winnerIndex].videoId === "undefined"
             ) {
               console.log("We encountered an error!");
-              let res = await handleScrape(browser, term, 0, globalTerm);
+              let res = await handleScrape(term, 0, globalTerm);
               resolve(res);
               //return null; //here call scraper? somehow return a resolve from that?
             } else {
@@ -366,41 +198,39 @@ exports.scrape = async function (req, res, next) {
             }
           } catch {
             console.log("We encountered an error!");
-            let res = await handleScrape(browser, term, 0, globalTerm);
+            let res = await handleScrape(term, 0, globalTerm);
             resolve(res);
           }
         });
         console.log("Database sending");
-        console.log(prom2);
         found = true;
         promises.push(prom2);
         // array.push('two');
       } else {
         console.log("Scraper sending.");
-        promises.push(handleScrape(browser, term, 0, globalTerm));
+        promises.push(handleScrape(term, 0, globalTerm));
       }
 
       if (err) {
         console.log("WE HAVE ERROR?");
 
-        promises.push(handleScrape(browser, term, 0, globalTerm));
+        promises.push(handleScrape(term, 0, globalTerm));
       }
     })
       .limit(20)
       .catch((e) => console.log("We got error here"));
   }
-  await timeout(2000);
+
   Promise.all(promises)
     .then(async (results) => {
       console.log("Promises OK");
-      await timeout(500);
-      await browser.close();
+
       console.log("Sending: ", results.length);
       res.json(results);
     })
     .catch(async (e) => {
       console.log("Error from all promsies");
-      await browser.close();
+
       res.json(e);
     });
 };
@@ -432,7 +262,6 @@ exports.autoCompleteYouTube = async function (req, res, next) {
 
   if (response) {
     data = iconv.decode(response.data, "win1252");
-    console.log(data);
     const searchSuggestions = [];
     data.split("[").forEach((ele, index) => {
       if (!ele.split('"')[1] || index === 1) return;
