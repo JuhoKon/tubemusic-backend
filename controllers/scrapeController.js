@@ -7,16 +7,17 @@ const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const Song = require("../models/song.model");
 //TODO: handle if there are no results found
 const handleScrape = async (term, counter, globalTerm) => {
+  await timeout(200 * Math.random());
   const result = await axios.post(
     "https://tubemusicsearch.herokuapp.com/search/",
     {
-      search: term,
+      search: globalTerm,
     }
   );
   const array = result.data;
 
   for (const [i, obj] of array.entries()) {
-    console.log(obj.thumbnails[0].url);
+    /*   console.log(obj.thumbnails[0].url); */
     let song = new Song({
       title: obj.title,
       uniqueId: Math.random(),
@@ -50,7 +51,11 @@ const handleScrape = async (term, counter, globalTerm) => {
       }); //errors come when we have videos in collections that we already have. no biggies
   }
   if (!array[0])
-    console.log("NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND ");
+    console.log(
+      globalTerm,
+      ": NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND "
+    );
+  let url = array[0].thumbnails[1].url;
   return array[0]
     ? {
         videoId: array[0].videoId,
@@ -58,7 +63,9 @@ const handleScrape = async (term, counter, globalTerm) => {
         duration: array[0].duration,
         scraped: true,
         uniqueId: array[0].uniqueId,
-        thumbnail: array[0].thumbnails[1].url,
+        thumbnail: url && url,
+        album: array[0].album,
+        artists: array[0].artists,
         date: Date.now(),
       }
     : undefined;
@@ -104,7 +111,7 @@ exports.searchScrape = async function (req, res, next) {
           }
           song.save();
         });
-        //console.log(e);
+        console.log(e);
         let error = e;
       }); //errors come when we have videos in collections that we already have. no biggies
   }
@@ -179,7 +186,7 @@ exports.scrape = async function (req, res, next) {
           }
         }
       }
-      console.log(prevSimilarity + " belong to index: " + winnerIndex);
+      /*   console.log(prevSimilarity + " belong to index: " + winnerIndex); */
 
       if (prevSimilarity >= 1) {
         var prom2 = new Promise(async function (resolve, reject) {
@@ -230,6 +237,7 @@ exports.scrape = async function (req, res, next) {
         // array.push('two');
       } else {
         console.log("Scraper sending.");
+
         promises.push(handleScrape(term, 0, globalTerm));
       }
 
@@ -294,7 +302,6 @@ exports.autoCompleteYouTube = async function (req, res, next) {
         });
       }
     });
-    console.log(searchSuggestions);
     return res.json({ data: searchSuggestions });
   }
   return res.status(404).json({ error: "Error getting autocomplete" });
