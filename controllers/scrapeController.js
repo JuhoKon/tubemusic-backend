@@ -18,6 +18,7 @@ const handleScrape = async (term, counter, globalTerm) => {
   const array = result.data;
 
   for (const [i, obj] of array.entries()) {
+    console.log(obj.thumbnails[0].url);
     let song = new Song({
       title: obj.title,
       uniqueId: Math.random(),
@@ -25,6 +26,7 @@ const handleScrape = async (term, counter, globalTerm) => {
       duration: obj.duration,
       term: [globalTerm],
       thumbnail: obj.thumbnails[0].url,
+      thumbnails: obj.thumbnails,
     });
     song
       .save()
@@ -33,6 +35,8 @@ const handleScrape = async (term, counter, globalTerm) => {
         Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
           song.title = obj.title;
           song.duration = obj.duration;
+          song.thumbnail = obj.thumbnails[0].url;
+          song.thumbnails = obj.thumbnails;
           if (!song.term.includes(globalTerm)) {
             song.term.push(globalTerm);
           }
@@ -55,7 +59,7 @@ const handleScrape = async (term, counter, globalTerm) => {
         thumbnail: array[0].thumbnails[1].url,
         date: Date.now(),
       }
-    : {};
+    : undefined;
 };
 
 exports.searchScrape = async function (req, res, next) {
@@ -67,6 +71,7 @@ exports.searchScrape = async function (req, res, next) {
       search: req.query.item,
     }
   );
+  const array = result.data;
   for (const [i, obj] of array.entries()) {
     let song = new Song({
       title: obj.title,
@@ -74,8 +79,9 @@ exports.searchScrape = async function (req, res, next) {
       videoId: obj.videoId,
       duration: obj.duration,
       term: [req.query.item],
-      thumbnail: obj.thumbnails[1].url,
+      thumbnail: obj.thumbnails[0].url,
     });
+    obj.thumbnail = obj.thumbnails[0].url;
     await song
       .save()
       .then()
@@ -83,7 +89,8 @@ exports.searchScrape = async function (req, res, next) {
         Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
           song.title = obj.title;
           song.duration = obj.duration;
-          song.thumbnail = obj.thumbnails[1].url;
+          song.thumbnail = obj.thumbnails[0].url;
+          song.thumbnails = obj.thumbnails;
           if (!song.term.includes(req.query.item)) {
             song.term.push(req.query.item);
           }
@@ -167,7 +174,7 @@ exports.scrape = async function (req, res, next) {
       }
       console.log(prevSimilarity + " belong to index: " + winnerIndex);
 
-      if (prevSimilarity >= 0.75) {
+      if (prevSimilarity >= 1) {
         var prom2 = new Promise(async function (resolve, reject) {
           // Do Stuff
           try {
