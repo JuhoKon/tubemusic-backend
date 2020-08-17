@@ -25,6 +25,8 @@ const handleScrape = async (term, counter, globalTerm) => {
       term: [globalTerm],
       thumbnail: obj.thumbnails[0].url,
       thumbnails: obj.thumbnails,
+      album: obj.album,
+      artists: obj.artists,
     });
     song
       .save()
@@ -35,6 +37,8 @@ const handleScrape = async (term, counter, globalTerm) => {
           song.duration = obj.duration;
           song.thumbnail = obj.thumbnails[0].url;
           song.thumbnails = obj.thumbnails;
+          song.album = obj.album;
+          song.artists = obj.artists;
           if (!song.term.includes(globalTerm)) {
             song.term.push(globalTerm);
           }
@@ -80,6 +84,8 @@ exports.searchScrape = async function (req, res, next) {
       duration: obj.duration,
       term: [req.query.item],
       thumbnail: obj.thumbnails[0].url,
+      album: obj.album,
+      artists: obj.artists,
     });
     obj.thumbnail = obj.thumbnails[0].url;
     await song
@@ -91,6 +97,8 @@ exports.searchScrape = async function (req, res, next) {
           song.duration = obj.duration;
           song.thumbnail = obj.thumbnails[0].url;
           song.thumbnails = obj.thumbnails;
+          song.album = obj.album;
+          song.artists = obj.artists;
           if (!song.term.includes(req.query.item)) {
             song.term.push(req.query.item);
           }
@@ -182,6 +190,10 @@ exports.scrape = async function (req, res, next) {
             let duration = foundItems[winnerIndex].duration;
             let scraped = true;
             let uniqueId = foundItems[winnerIndex].uniqueId;
+            let album = foundItems[winnerIndex].album;
+            let artists = foundItems[winnerIndex].artists;
+            let thumbnail = foundItems[winnerIndex].thumbnail;
+            let thumbnails = foundItems[winnerIndex].thumbnails;
             let date = Date.now();
             //await timeout(2000);
             if (
@@ -200,6 +212,10 @@ exports.scrape = async function (req, res, next) {
                 scraped: scraped,
                 uniqueId: uniqueId,
                 date: date,
+                album: album,
+                artists: artists,
+                thumbnail: thumbnail,
+                thumbnails: thumbnails,
               });
             }
           } catch {
