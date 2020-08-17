@@ -50,17 +50,28 @@ const handleScrape = async (term, counter, globalTerm) => {
         let error = e;
       }); //errors come when we have videos in collections that we already have. no biggies
   }
-  if (!array[0].title)
+  if (!array) return undefined;
+  if (!array[0]) return undefined;
+  if (
+    !array[0] ||
+    !array[0].title ||
+    !array[0].thumbnails ||
+    !array[0].artists ||
+    !array[0].album ||
+    !array[0].videoId
+  ) {
     console.log(
       globalTerm,
       ": NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND "
     );
+    return undefined;
+  }
+
   let url = "";
   if (array[0] && array[0].thumbnails) {
     url = array[0].thumbnails[0].url;
   }
-  console.log(globalTerm + array[0].title + array.length);
-  return array[0].title
+  return array[0]
     ? {
         videoId: array[0].videoId,
         title: array[0].title,
