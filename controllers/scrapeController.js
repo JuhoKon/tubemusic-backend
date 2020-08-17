@@ -97,6 +97,10 @@ exports.searchScrape = async function (req, res, next) {
   );
   const array = result.data;
   array.forEach((element) => (element.thumbnail = element.thumbnails[0].url));
+  if (!array) {
+    res.json([]);
+    return;
+  }
   res.json({ array });
   for (const [i, obj] of array.entries()) {
     let song = new Song({
