@@ -1,8 +1,6 @@
-const request = require("request-promise");
 const axios = require("axios");
 const iconv = require("iconv-lite");
-const cheerio = require("cheerio");
-const puppeteer = require("puppeteer");
+
 const stringSimilarity = require("string-similarity");
 const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -72,6 +70,7 @@ exports.searchScrape = async function (req, res, next) {
     }
   );
   const array = result.data;
+  res.json({ array });
   for (const [i, obj] of array.entries()) {
     let song = new Song({
       title: obj.title,
@@ -100,7 +99,6 @@ exports.searchScrape = async function (req, res, next) {
         let error = e;
       }); //errors come when we have videos in collections that we already have. no biggies
   }
-  res.json({ array });
 };
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);

@@ -29,7 +29,6 @@
     "nodemon": "^2.0.2",
     "promise.allsettled": "^1.0.2",
     "pug": "2.0.0-beta11",
-    "puppeteer": "^4.0.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "string-similarity": "^4.0.1"
