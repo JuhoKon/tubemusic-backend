@@ -276,7 +276,7 @@ exports.scrape = async function (req, res, next) {
     })
     .catch(async (e) => {
       console.log("Error from all promsies");
-
+      console.log(e);
       res.json(e);
     });
 };
