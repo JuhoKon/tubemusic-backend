@@ -50,13 +50,17 @@ const handleScrape = async (term, counter, globalTerm) => {
         let error = e;
       }); //errors come when we have videos in collections that we already have. no biggies
   }
-  if (!array[0])
+  if (!array[0].title)
     console.log(
       globalTerm,
       ": NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND "
     );
-  let url = array[0].thumbnails[1].url;
-  return array[0]
+  let url = "";
+  if (array[0] && array[0].thumbnails) {
+    url = array[0].thumbnails[0].url;
+  }
+  console.log(globalTerm + array[0].title + array.length);
+  return array[0].title
     ? {
         videoId: array[0].videoId,
         title: array[0].title,
@@ -208,7 +212,11 @@ exports.scrape = async function (req, res, next) {
               typeof foundItems[winnerIndex].videoId === "undefined"
             ) {
               console.log("We encountered an error!");
-              let res = await handleScrape(term, 0, globalTerm);
+              let res = await handleScrape(
+                term,
+                0,
+                tracks[i].title + " " + tracks[i].artistName
+              );
               resolve(res);
               //return null; //here call scraper? somehow return a resolve from that?
             } else {
@@ -227,7 +235,11 @@ exports.scrape = async function (req, res, next) {
             }
           } catch {
             console.log("We encountered an error!");
-            let res = await handleScrape(term, 0, globalTerm);
+            let res = await handleScrape(
+              term,
+              0,
+              tracks[i].title + " " + tracks[i].artistName
+            );
             resolve(res);
           }
         });
@@ -238,13 +250,17 @@ exports.scrape = async function (req, res, next) {
       } else {
         console.log("Scraper sending.");
 
-        promises.push(handleScrape(term, 0, globalTerm));
+        promises.push(
+          handleScrape(term, 0, tracks[i].title + " " + tracks[i].artistName)
+        );
       }
 
       if (err) {
         console.log("WE HAVE ERROR?");
 
-        promises.push(handleScrape(term, 0, globalTerm));
+        promises.push(
+          handleScrape(term, 0, tracks[i].title + " " + tracks[i].artistName)
+        );
       }
     })
       .limit(20)
