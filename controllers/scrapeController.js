@@ -28,6 +28,7 @@ const handleScrape = async (term, counter, globalTerm) => {
       thumbnails: obj.thumbnails,
       album: obj.album,
       artists: obj.artists,
+      resultType: obj.resultType,
     });
     song
       .save()
@@ -40,6 +41,7 @@ const handleScrape = async (term, counter, globalTerm) => {
           song.thumbnails = obj.thumbnails;
           song.album = obj.album;
           song.artists = obj.artists;
+          song.resultType = obj.resultType;
           if (!song.term.includes(globalTerm)) {
             song.term.push(globalTerm);
           }
@@ -81,6 +83,7 @@ const handleScrape = async (term, counter, globalTerm) => {
         thumbnail: url && url,
         album: array[0].album,
         artists: array[0].artists,
+        resultType: array[0].resultType,
         date: Date.now(),
       }
     : undefined;
@@ -96,11 +99,14 @@ exports.searchScrape = async function (req, res, next) {
     }
   );
   const array = result.data;
-  array.forEach((element) => (element.thumbnail = element.thumbnails[0].url));
+  array.forEach((element) => {
+    element.thumbnail = element.thumbnails[0].url;
+  });
   if (!array) {
     res.json([]);
     return;
   }
+
   res.json({ array });
   for (const [i, obj] of array.entries()) {
     let song = new Song({
@@ -112,6 +118,7 @@ exports.searchScrape = async function (req, res, next) {
       thumbnail: obj.thumbnails[0].url,
       album: obj.album,
       artists: obj.artists,
+      resultType: obj.resultType,
     });
     obj.thumbnail = obj.thumbnails[0].url;
     await song
@@ -125,12 +132,13 @@ exports.searchScrape = async function (req, res, next) {
           song.thumbnails = obj.thumbnails;
           song.album = obj.album;
           song.artists = obj.artists;
+          song.resultType = obj.resultType;
           if (!song.term.includes(req.query.item)) {
             song.term.push(req.query.item);
           }
           song.save();
         });
-        console.log(e);
+        //console.log(e);
         let error = e;
       }); //errors come when we have videos in collections that we already have. no biggies
   }
@@ -336,4 +344,39 @@ exports.autoCompleteYouTube = async function (req, res, next) {
     return res.json({ data: searchSuggestions });
   }
   return res.status(404).json({ error: "Error getting autocomplete" });
+};
+
+exports.searchArtists = async function (req, res, next) {
+  if (!req.query.query) return res.json({ error: "Error" });
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/artistsearch/",
+    {
+      search: req.query.query,
+    }
+  );
+  const array = result.data;
+  res.json({ array });
+};
+exports.getArtistData = async function (req, res, next) {
+  if (!req.query.query) return res.json({ error: "Error" });
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/get_artist/",
+    {
+      browseid: req.query.query,
+    }
+  );
+  const array = result.data;
+  res.json({ array });
+};
+
+exports.getPlaylist = async function (req, res, next) {
+  if (!req.query.query) return res.json({ error: "Error" });
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/get_playlist/",
+    {
+      browseid: req.query.query,
+    }
+  );
+  const array = result.data;
+  res.json({ array });
 };

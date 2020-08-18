@@ -13,6 +13,7 @@ var songSchema = new Schema(
     thumbnails: { type: Array },
     album: { type: Array },
     artists: { type: Array },
+    resultType: { type: String },
   },
   {
     timestamps: true,
