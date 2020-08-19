@@ -348,35 +348,36 @@ exports.autoCompleteYouTube = async function (req, res, next) {
 
 exports.searchArtists = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/artistsearch/",
-    {
-      search: req.query.query,
-    }
-  );
+  const result = await axios.post("http://127.0.0.1:5000/artistsearch/", {
+    search: req.query.query,
+  });
   const array = result.data;
   res.json({ array });
 };
 exports.getArtistData = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_artist/",
-    {
-      browseid: req.query.query,
-    }
-  );
+  const result = await axios.post("http://127.0.0.1:5000/get_artist/", {
+    browseid: req.query.query,
+  });
   const array = result.data;
   res.json({ array });
 };
-
+/* TODO: add the result tracks from this to our database*/
 exports.getPlaylist = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_playlist/",
-    {
-      browseid: req.query.query,
-    }
-  );
+  const result = await axios.post("http://127.0.0.1:5000/get_playlist/", {
+    browseid: req.query.query,
+  });
+
+  const array = result.data;
+  res.json({ array });
+};
+exports.getAlbum = async function (req, res, next) {
+  if (!req.query.query) return res.json({ error: "Error" });
+  const result = await axios.post("http://127.0.0.1:5000/get_album/", {
+    browseid: req.query.query,
+  });
+
   const array = result.data;
   res.json({ array });
 };

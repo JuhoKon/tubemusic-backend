@@ -51,6 +51,19 @@ exports.updatebyID = function (req, res, next) {
   });
   // console.log(req.params.id);
 };
+exports.addSongToPlayList = function (req, res, next) {
+  if (!req.params.id || !req.body.track) {
+    return res.status(400).json({ error: "Please enter all fields" });
+  }
+
+  Playlist.findById(req.params.id).then((playlist) => {
+    playlist.playlist.push(req.body.track);
+    playlist
+      .save()
+      .then(() => res.json(playlist))
+      .catch((err) => res.status(400).json({ error: err }));
+  });
+};
 exports.updatetime = function (req, res, next) {
   if (!req.body.videoId || !req.body.duration) {
     return res.status(400).json({ error: "Please enter all fields" });

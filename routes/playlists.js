@@ -16,6 +16,6 @@ router.post("/create", auth, playlist_controller.create);
 
 router.get("/find/:id", auth, playlist_controller.findByID);
 router.put("/update/:id", auth, playlist_controller.updatebyID);
-
+router.put("/additem/:id", auth, playlist_controller.addSongToPlayList);
 router.put("/updatetime/:id", auth, playlist_controller.updatetime);
 module.exports = router;
