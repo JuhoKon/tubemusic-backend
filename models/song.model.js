@@ -11,8 +11,18 @@ var songSchema = new Schema(
     term: { type: Array, required: true },
     thumbnail: { type: String },
     thumbnails: { type: Array },
-    album: { type: Array },
-    artists: { type: Array },
+    album: [
+      {
+        name: String,
+        id: String,
+      },
+    ],
+    artists: [
+      {
+        name: String,
+        id: String,
+      },
+    ],
     resultType: { type: String },
   },
   {
@@ -20,11 +30,13 @@ var songSchema = new Schema(
   }
 );
 songSchema.index(
-  { title: "text", term: "text" },
+  { title: "text", term: "text", "artists.name": "text", "album.name": "text" },
   {
     weights: {
-      title: 1,
-      term: 10,
+      title: 0,
+      term: 0,
+      artists: 0,
+      album: 5,
     },
   }
 );

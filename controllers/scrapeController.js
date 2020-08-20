@@ -392,4 +392,60 @@ exports.getAlbum = async function (req, res, next) {
 
   const array = result.data;
   res.json({ array });
+  array.tracks.forEach(async (track) => {
+    if (!track.videoId) return;
+    const song = await Song.findOne({ videoId: track.videoId });
+    if (song) {
+      song.title = track.title;
+      song.thumbnail = track.thumbnails[0].url;
+      song.thumbnails = track.thumbnails;
+      song.album = { name: array.title, id: req.query.query };
+      song.artists = array.artist;
+      song.uniqueId = Math.random() + track.title;
+      song.resultType = "song";
+      song.save();
+      /*   console.log(song.album); */
+    }
+    if (!song) {
+      let newsong = new Song({
+        title: track.title,
+        uniqueId: Math.random(),
+        videoId: track.videoId,
+        duration: format(track.lengthMs / 1000),
+        thumbnail: track.thumbnails[0].url,
+        thumbnails: track.thumbnails,
+        album: { name: array.title, id: req.query.query },
+        artists: array.artist,
+        resultType: "song",
+      });
+      newsong.save();
+    }
+  });
 };
+exports.getAlbums = async function (req, res, next) {
+  if (!req.query.browseId) return res.json({ error: "Error" });
+  const result = await axios.post(
+    "https://tubemusicsearch.herokuapp.com/get_artist_albums/",
+    {
+      browseid: req.query.browseId,
+      params: req.query.params,
+    }
+  );
+
+  const array = result.data;
+  res.json({ array });
+};
+
+function pad(string) {
+  return ("0" + string).slice(-2);
+}
+function format(seconds) {
+  const date = new Date(seconds * 1000);
+  const hh = date.getUTCHours();
+  const mm = date.getUTCMinutes();
+  const ss = pad(date.getUTCSeconds());
+  if (hh) {
+    return `${hh}.${pad(mm)}.${ss}`;
+  }
+  return `${mm}.${ss}`;
+}

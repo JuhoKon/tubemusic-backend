@@ -10,7 +10,7 @@ exports.index = function (req, res, next) {
     .catch((err) => res.status(400).json("Error: " + err));
 };
 exports.create = function (req, res, next) {
-  console.log(req.body.playlist);
+  //console.log(req.body.playlist);
   var playlist = new Playlist({
     name: req.body.name,
     playlist: req.body.playlist,

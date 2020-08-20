@@ -12,4 +12,5 @@ router.get("/search_artists", auth, scrape_controller.searchArtists);
 router.get("/get_artist_data", auth, scrape_controller.getArtistData);
 router.get("/get_playlist", auth, scrape_controller.getPlaylist);
 router.get("/get_album", auth, scrape_controller.getAlbum);
+router.get("/get_artist_albums", auth, scrape_controller.getAlbums);
 module.exports = router;
