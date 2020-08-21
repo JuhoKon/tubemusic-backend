@@ -354,7 +354,8 @@ exports.searchArtists = async function (req, res, next) {
       search: req.query.query,
     }
   );
-  const array = result.data;
+  const array = result.data.slice(0, 12);
+
   res.json({ array });
 };
 exports.getArtistData = async function (req, res, next) {
@@ -423,14 +424,16 @@ exports.getAlbum = async function (req, res, next) {
   });
 };
 exports.getAlbums = async function (req, res, next) {
-  if (!req.query.browseId) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_artist_albums/",
-    {
+  if (!req.query.browseId || !req.query.params)
+    return res.json({ error: "Error" });
+  const result = await axios
+    .post("https://tubemusicsearch.herokuapp.com/get_artist_albums/", {
       browseid: req.query.browseId,
       params: req.query.params,
-    }
-  );
+    })
+    .catch((e) => {
+      res.status(500).json({ error: true });
+    });
 
   const array = result.data;
   res.json({ array });

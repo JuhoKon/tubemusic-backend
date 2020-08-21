@@ -11,12 +11,11 @@ var songSchema = new Schema(
     term: { type: Array, required: true },
     thumbnail: { type: String },
     thumbnails: { type: Array },
-    album: [
-      {
-        name: String,
-        id: String,
-      },
-    ],
+    album: {
+      name: String,
+      id: String,
+    },
+
     artists: [
       {
         name: String,
