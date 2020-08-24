@@ -29,6 +29,7 @@
     "nodemon": "^2.0.2",
     "promise.allsettled": "^1.0.2",
     "pug": "2.0.0-beta11",
+    "redis": "^3.0.2",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "string-similarity": "^4.0.1"

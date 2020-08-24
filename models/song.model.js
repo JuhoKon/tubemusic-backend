@@ -15,7 +15,6 @@ var songSchema = new Schema(
       name: String,
       id: String,
     },
-
     artists: [
       {
         name: String,
@@ -32,9 +31,9 @@ songSchema.index(
   { title: "text", term: "text", "artists.name": "text", "album.name": "text" },
   {
     weights: {
-      title: 0,
-      term: 0,
-      artists: 0,
+      title: 1,
+      term: 1,
+      artists: 1,
       album: 5,
     },
   }

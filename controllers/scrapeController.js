@@ -6,6 +6,16 @@ const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const Song = require("../models/song.model");
 //TODO: handle if there are no results found
+const redis = require("redis"); //Cache
+const REDIS_URL = process.env.REDIS_URL || "https://localhost:6379";
+const client = redis.createClient(REDIS_URL);
+client.on("error", (err) => {
+  console.log("Error " + err);
+});
+client.on("connect", function () {
+  console.log("You are now connected");
+});
+
 const handleScrape = async (term, counter, globalTerm) => {
   await timeout(200 * Math.random());
   const result = await axios.post(
@@ -92,56 +102,68 @@ const handleScrape = async (term, counter, globalTerm) => {
 exports.searchScrape = async function (req, res, next) {
   //console.log(req.query.term);
   if (!req.query.item) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/search/",
-    {
-      search: req.query.item,
-    }
-  );
-  const array = result.data;
-  array.forEach((element) => {
-    element.thumbnail = element.thumbnails[0].url;
-  });
-  if (!array) {
-    res.json([]);
-    return;
-  }
+  client.get("Searchyt" + req.query.item, async function (err, reply) {
+    if (reply) {
+      const array = JSON.parse(reply);
+      if (!array) {
+        res.json([]);
+        return;
+      }
+      res.json({ array });
+    } else {
+      const result = await axios.post(
+        "https://tubemusicsearch.herokuapp.com/search/",
+        {
+          search: req.query.item,
+        }
+      );
+      const array = result.data;
+      array.forEach((element) => {
+        element.thumbnail = element.thumbnails[0].url;
+      });
+      if (!array) {
+        res.json([]);
+        return;
+      }
 
-  res.json({ array });
-  for (const [i, obj] of array.entries()) {
-    let song = new Song({
-      title: obj.title,
-      uniqueId: Math.random(),
-      videoId: obj.videoId,
-      duration: obj.duration,
-      term: [req.query.item],
-      thumbnail: obj.thumbnails[0].url,
-      album: obj.album,
-      artists: obj.artists,
-      resultType: obj.resultType,
-    });
-    obj.thumbnail = obj.thumbnails[0].url;
-    await song
-      .save()
-      .then()
-      .catch(async (e) => {
-        Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
-          song.title = obj.title;
-          song.duration = obj.duration;
-          song.thumbnail = obj.thumbnails[0].url;
-          song.thumbnails = obj.thumbnails;
-          song.album = obj.album;
-          song.artists = obj.artists;
-          song.resultType = obj.resultType;
-          if (!song.term.includes(req.query.item)) {
-            song.term.push(req.query.item);
-          }
-          song.save();
+      res.json({ array });
+      client.setex("Searchyt" + req.query.item, 3600, JSON.stringify(array));
+      for (const [i, obj] of array.entries()) {
+        let song = new Song({
+          title: obj.title,
+          uniqueId: Math.random(),
+          videoId: obj.videoId,
+          duration: obj.duration,
+          term: [req.query.item],
+          thumbnail: obj.thumbnails[0].url,
+          album: obj.album,
+          artists: obj.artists,
+          resultType: obj.resultType,
         });
-        //console.log(e);
-        let error = e;
-      }); //errors come when we have videos in collections that we already have. no biggies
-  }
+        obj.thumbnail = obj.thumbnails[0].url;
+        await song
+          .save()
+          .then()
+          .catch(async (e) => {
+            Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
+              song.title = obj.title;
+              song.duration = obj.duration;
+              song.thumbnail = obj.thumbnails[0].url;
+              song.thumbnails = obj.thumbnails;
+              song.album = obj.album;
+              song.artists = obj.artists;
+              song.resultType = obj.resultType;
+              if (!song.term.includes(req.query.item)) {
+                song.term.push(req.query.item);
+              }
+              song.save();
+            });
+            //console.log(e);
+            let error = e;
+          }); //errors come when we have videos in collections that we already have. no biggies
+      }
+    }
+  });
 };
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
@@ -306,12 +328,20 @@ exports.scrape = async function (req, res, next) {
 exports.searchScrape_database = async function (req, res, next) {
   let term = req.query.item;
   //console.log(term);
-  Song.find({ $text: { $search: term } }, function (err, docs) {
-    //console.log(docs);
-    res.json({ array: docs });
-  })
-    .limit(50)
-    .catch((e) => res.json({ error: e }));
+  client.get("Searchdb" + req.query.item, async function (err, reply) {
+    if (reply) {
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      Song.find({ $text: { $search: term } }, function (err, docs) {
+        //console.log(docs);
+        client.setex("Searchdb" + req.query.item, 360, JSON.stringify(docs));
+        res.json({ array: docs });
+      })
+        .limit(50)
+        .catch((e) => console.log(e));
+    }
+  });
 };
 exports.updateDatabase = async function (req, res, next) {
   /* WORK IN PROGRESS*/
@@ -348,26 +378,41 @@ exports.autoCompleteYouTube = async function (req, res, next) {
 
 exports.searchArtists = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/artistsearch/",
-    {
-      search: req.query.query,
+  client.get("Search" + req.query.query, async function (err, reply) {
+    if (reply) {
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      const result = await axios.post(
+        "https://tubemusicsearch.herokuapp.com/artistsearch/",
+        {
+          search: req.query.query,
+        }
+      );
+      const array = result.data.slice(0, 12);
+      client.setex("Search" + req.query.query, 3600, JSON.stringify(array));
+      res.json({ array });
     }
-  );
-  const array = result.data.slice(0, 12);
-
-  res.json({ array });
+  });
 };
 exports.getArtistData = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_artist/",
-    {
-      browseid: req.query.query,
+  client.get("Artist" + req.query.query, async function (err, reply) {
+    if (reply) {
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      const result = await axios.post(
+        "https://tubemusicsearch.herokuapp.com/get_artist/",
+        {
+          browseid: req.query.query,
+        }
+      );
+      const array = result.data;
+      client.setex("Artist" + req.query.query, 3600, JSON.stringify(array));
+      res.json({ array });
     }
-  );
-  const array = result.data;
-  res.json({ array });
+  });
 };
 /* TODO: add the result tracks from this to our database*/
 exports.getPlaylist = async function (req, res, next) {
@@ -384,59 +429,78 @@ exports.getPlaylist = async function (req, res, next) {
 };
 exports.getAlbum = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_album/",
-    {
-      browseid: req.query.query,
-    }
-  );
+  client.get(req.query.query, async function (err, reply) {
+    if (reply) {
+      console.log("Found from cache");
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      const result = await axios.post(
+        "https://tubemusicsearch.herokuapp.com/get_album/",
+        {
+          browseid: req.query.query,
+        }
+      );
 
-  const array = result.data;
-  res.json({ array });
-  array.tracks.forEach(async (track) => {
-    if (!track.videoId) return;
-    const song = await Song.findOne({ videoId: track.videoId });
-    if (song) {
-      song.title = track.title;
-      song.thumbnail = track.thumbnails[0].url;
-      song.thumbnails = track.thumbnails;
-      song.album = { name: array.title, id: req.query.query };
-      song.artists = array.artist;
-      song.uniqueId = Math.random() + track.title;
-      song.resultType = "song";
-      song.save();
-      /*   console.log(song.album); */
-    }
-    if (!song) {
-      let newsong = new Song({
-        title: track.title,
-        uniqueId: Math.random(),
-        videoId: track.videoId,
-        duration: format(track.lengthMs / 1000),
-        thumbnail: track.thumbnails[0].url,
-        thumbnails: track.thumbnails,
-        album: { name: array.title, id: req.query.query },
-        artists: array.artist,
-        resultType: "song",
+      const array = result.data;
+      client.setex(req.query.query, 3600, JSON.stringify(array));
+      res.json({ array });
+      array.tracks.forEach(async (track) => {
+        if (!track.videoId) return;
+        const song = await Song.findOne({ videoId: track.videoId });
+        if (song) {
+          song.title = track.title;
+          song.thumbnail = track.thumbnails[0].url;
+          song.thumbnails = track.thumbnails;
+          song.album = { name: array.title, id: req.query.query };
+          song.artists = array.artist;
+          song.uniqueId = Math.random() + track.title;
+          song.resultType = "song";
+          song.save();
+          /*   console.log(song.album); */
+        }
+        if (!song) {
+          let newsong = new Song({
+            title: track.title,
+            uniqueId: Math.random(),
+            videoId: track.videoId,
+            duration: format(track.lengthMs / 1000),
+            thumbnail: track.thumbnails[0].url,
+            thumbnails: track.thumbnails,
+            album: { name: array.title, id: req.query.query },
+            artists: array.artist,
+            resultType: "song",
+          });
+          newsong.save();
+        }
       });
-      newsong.save();
     }
   });
 };
 exports.getAlbums = async function (req, res, next) {
   if (!req.query.browseId || !req.query.params)
     return res.json({ error: "Error" });
-  const result = await axios
-    .post("https://tubemusicsearch.herokuapp.com/get_artist_albums/", {
-      browseid: req.query.browseId,
-      params: req.query.params,
-    })
-    .catch((e) => {
-      res.status(500).json({ error: true });
-    });
 
-  const array = result.data;
-  res.json({ array });
+  client.get("Album" + req.query.browseId, async function (err, reply) {
+    if (reply) {
+      console.log("Sending from cache");
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      const result = await axios
+        .post("https://tubemusicsearch.herokuapp.com/get_artist_albums/", {
+          browseid: req.query.browseId,
+          params: req.query.params,
+        })
+        .catch((e) => {
+          res.status(500).json({ error: true });
+        });
+
+      const array = result.data;
+      client.setex("Album" + req.query.browseId, 3600, JSON.stringify(array));
+      res.json({ array });
+    }
+  });
 };
 
 function pad(string) {

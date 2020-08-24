@@ -1,5 +1,16 @@
 var Playlist = require("../models/playlist.model");
 var User = require("../models/user.model");
+
+const redis = require("redis"); //Cache
+const REDIS_URL = process.env.REDIS_URL || "https://localhost:6379";
+const client = redis.createClient(REDIS_URL);
+client.on("error", (err) => {
+  console.log("Error " + err);
+});
+client.on("connect", function () {
+  console.log("You are now connected");
+});
+
 exports.index = function (req, res, next) {
   Playlist.find()
     .select("-playlist")

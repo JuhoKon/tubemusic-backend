@@ -23,6 +23,8 @@ var corsOptions = {
   },
 };
 
+require("dotenv").config();
+
 // Then pass them to cors:
 app.use(cors());
 
