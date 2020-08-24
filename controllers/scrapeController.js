@@ -497,8 +497,10 @@ exports.getAlbums = async function (req, res, next) {
         });
 
       const array = result.data;
-      client.setex("Album" + req.query.browseId, 3600, JSON.stringify(array));
-      res.json({ array });
+      if (array) {
+        client.setex("Album" + req.query.browseId, 3600, JSON.stringify(array));
+        res.json({ array });
+      }
     }
   });
 };
