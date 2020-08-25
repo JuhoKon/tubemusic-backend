@@ -62,6 +62,8 @@ db.on(
   "open",
   console.log.bind(console, "MongoDB connection successful: " + mongoURL)
 );
+mongoose.set("useFindAndModify", false);
+
 app.set("trust proxy", 1);
 // view engine setup
 app.use("/", indexRouter);

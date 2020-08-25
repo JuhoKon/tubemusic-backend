@@ -2,7 +2,7 @@ var Playlist = require("../models/playlist.model");
 var User = require("../models/user.model");
 
 const redis = require("redis"); //Cache
-const REDIS_URL = process.env.REDIS_URL || "https://localhost:6379";
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const client = redis.createClient(REDIS_URL);
 client.on("error", (err) => {
   console.log("Error " + err);
@@ -41,15 +41,30 @@ exports.findByID = function (req, res, next) {
   if (!req.params.id) {
     return res.status(400).json({ error: "Id not submitted" });
   }
-  Playlist.findById(req.params.id)
-    .then((playlist) => res.json(playlist))
-    .catch((err) => res.status(400).json("Error:" + err));
+  client.get("Playlist" + req.params.id, async function (err, reply) {
+    if (reply) {
+      const playlist = JSON.parse(reply);
+      res.json(playlist);
+    } else {
+      Playlist.findById(req.params.id)
+        .then((playlist) => {
+          res.json(playlist);
+          client.setex(
+            "Playlist" + req.params.id,
+            3600,
+            JSON.stringify(playlist)
+          );
+        })
+        .catch((err) => res.status(400).json("Error:" + err));
+    }
+  });
 };
-exports.updatebyID = function (req, res, next) {
+exports.updatebyID = async function (req, res, next) {
   if (!req.body.name || !req.body.playlist) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
   //console.log(req.body);
+
   Playlist.findById(req.params.id).then((playlist) => {
     (playlist.name = req.body.name),
       (playlist.playlist = req.body.playlist),
@@ -57,7 +72,14 @@ exports.updatebyID = function (req, res, next) {
       (playlist.owner = playlist.owner);
     playlist
       .save()
-      .then(() => res.json(playlist))
+      .then(() => {
+        res.json(playlist);
+        client.setex(
+          "Playlist" + req.params.id,
+          3600,
+          JSON.stringify(playlist)
+        );
+      })
       .catch((err) => res.status(400).json({ error: err }));
   });
   // console.log(req.params.id);
@@ -71,7 +93,14 @@ exports.addSongToPlayList = function (req, res, next) {
     playlist.playlist.push(req.body.track);
     playlist
       .save()
-      .then(() => res.json(playlist))
+      .then(() => {
+        res.json(playlist);
+        client.setex(
+          "Playlist" + req.params.id,
+          3600,
+          JSON.stringify(playlist)
+        );
+      })
       .catch((err) => res.status(400).json({ error: err }));
   });
 };
@@ -99,6 +128,7 @@ exports.deletebyID = function (req, res, next) {
   }
   Playlist.findByIdAndDelete(req.params.id) //delete actual post from the database
     .then(() => {
+      client.del("Playlist" + req.params.id);
       next();
     })
     .catch((err) => res.status(400).json({ error: err }));

@@ -7,7 +7,7 @@ const timeout = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const Song = require("../models/song.model");
 //TODO: handle if there are no results found
 const redis = require("redis"); //Cache
-const REDIS_URL = process.env.REDIS_URL || "https://localhost:6379";
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const client = redis.createClient(REDIS_URL);
 client.on("error", (err) => {
   console.log("Error " + err);
@@ -17,7 +17,6 @@ client.on("connect", function () {
 });
 
 const handleScrape = async (term, counter, globalTerm) => {
-  await timeout(200 * Math.random());
   const result = await axios.post(
     "https://tubemusicsearch.herokuapp.com/search/",
     {
@@ -26,8 +25,8 @@ const handleScrape = async (term, counter, globalTerm) => {
   );
   const array = result.data;
 
-  for (const [i, obj] of array.entries()) {
-    /*   console.log(obj.thumbnails[0].url); */
+  /*  for (const [i, obj] of array.entries()) {
+  
     let song = new Song({
       title: obj.title,
       uniqueId: Math.random(),
@@ -60,9 +59,8 @@ const handleScrape = async (term, counter, globalTerm) => {
         });
 
         let error = e;
-      }); //errors come when we have videos in collections that we already have. no biggies
-  }
-  if (!array) return undefined;
+      });  */
+  /*   if (!array) return undefined;
   if (!array[0]) return undefined;
   if (
     !array[0] ||
@@ -77,7 +75,7 @@ const handleScrape = async (term, counter, globalTerm) => {
       ": NOT FOUND NOT FOUND NOT FOUND NOT FOUND NOT FOUND "
     );
     return undefined;
-  }
+  } */
 
   let url = "";
   if (array[0] && array[0].thumbnails) {
@@ -89,7 +87,7 @@ const handleScrape = async (term, counter, globalTerm) => {
         title: array[0].title,
         duration: array[0].duration,
         scraped: true,
-        uniqueId: array[0].uniqueId,
+        uniqueId: Math.random() + Date.now(),
         thumbnail: url && url,
         album: array[0].album,
         artists: array[0].artists,
@@ -120,6 +118,7 @@ exports.searchScrape = async function (req, res, next) {
       const array = result.data;
       array.forEach((element) => {
         element.thumbnail = element.thumbnails[0].url;
+        element.uniqueId = Math.random() + Date.now();
       });
       if (!array) {
         res.json([]);
