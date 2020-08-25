@@ -398,6 +398,7 @@ exports.getArtistData = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
   client.get("Artist" + req.query.query, async function (err, reply) {
     if (reply) {
+      console.log("Sent from cache");
       const array = JSON.parse(reply);
       res.json({ array });
     } else {
@@ -430,7 +431,7 @@ exports.getAlbum = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
   client.get(req.query.query, async function (err, reply) {
     if (reply) {
-      console.log("Found from cache");
+      console.log("Sending from cache");
       const array = JSON.parse(reply);
       res.json({ array });
     } else {
