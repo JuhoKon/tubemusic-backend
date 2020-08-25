@@ -43,6 +43,7 @@ exports.findByID = function (req, res, next) {
   }
   client.get("Playlist" + req.params.id, async function (err, reply) {
     if (reply) {
+      console.log("Found from cache");
       const playlist = JSON.parse(reply);
       res.json(playlist);
     } else {
