@@ -9,6 +9,10 @@ const Song = require("../models/song.model");
 const redis = require("redis"); //Cache
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const client = redis.createClient(REDIS_URL);
+
+let Queue = require("bull");
+let workQueue = new Queue("work", REDIS_URL);
+
 client.on("error", (err) => {
   console.log("Error " + err);
 });
@@ -127,43 +131,45 @@ exports.searchScrape = async function (req, res, next) {
 
       res.json({ array });
       client.setex("Searchyt" + req.query.item, 3600, JSON.stringify(array));
-      for (const [i, obj] of array.entries()) {
-        let song = new Song({
-          title: obj.title,
-          uniqueId: Math.random(),
-          videoId: obj.videoId,
-          duration: obj.duration,
-          term: [req.query.item],
-          thumbnail: obj.thumbnails[0].url,
-          album: obj.album,
-          artists: obj.artists,
-          resultType: obj.resultType,
-        });
-        obj.thumbnail = obj.thumbnails[0].url;
-        await song
-          .save()
-          .then()
-          .catch(async (e) => {
-            Song.findOne({ videoId: e.keyValue.videoId }).then((song) => {
-              song.title = obj.title;
-              song.duration = obj.duration;
-              song.thumbnail = obj.thumbnails[0].url;
-              song.thumbnails = obj.thumbnails;
-              song.album = obj.album;
-              song.artists = obj.artists;
-              song.resultType = obj.resultType;
-              if (!song.term.includes(req.query.item)) {
-                song.term.push(req.query.item);
-              }
-              song.save();
-            });
-            //console.log(e);
-            let error = e;
-          }); //errors come when we have videos in collections that we already have. no biggies
-      }
+      updateDataBase(array, req.query.item);
+      //workQueue.add([1, array, req.query.item]);
     }
   });
 };
+async function updateDataBase(array, item) {
+  array.forEach(async (track) => {
+    if (!track.videoId) return;
+    const song = await Song.findOne({ videoId: track.videoId });
+    if (song && Math.random() > 0.8) {
+      song.title = track.title;
+      song.duration = track.duration;
+      song.thumbnail = track.thumbnails[0].url;
+      song.thumbnails = track.thumbnails;
+      song.album = track.album;
+      song.artists = track.artists;
+      song.resultType = track.resultType;
+      if (!song.term.includes(item)) {
+        song.term.push(item);
+      }
+      song.save().then(() => console.log("Saved"));
+      /*   console.log(song.album); */
+    }
+    if (!song) {
+      let newsong = new Song({
+        title: track.title,
+        uniqueId: Math.random(),
+        videoId: track.videoId,
+        duration: track.duration,
+        term: [item],
+        thumbnail: track.thumbnails[0].url,
+        album: track.album,
+        artists: track.artists,
+        resultType: track.resultType,
+      });
+      newsong.save().then(() => console.log("New song saved"));
+    }
+  });
+}
 exports.scrape = async function (req, res, next) {
   //console.log(req.body.term);
   let globalTerm = "";
@@ -329,6 +335,7 @@ exports.searchScrape_database = async function (req, res, next) {
   //console.log(term);
   client.get("Searchdb" + req.query.item, async function (err, reply) {
     if (reply) {
+      console.log("Sending from cache");
       const array = JSON.parse(reply);
       res.json({ array });
     } else {
@@ -417,19 +424,57 @@ exports.getArtistData = async function (req, res, next) {
 /* TODO: add the result tracks from this to our database*/
 exports.getPlaylist = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  const result = await axios.post(
-    "https://tubemusicsearch.herokuapp.com/get_playlist/",
-    {
-      browseid: req.query.query,
+  client.get("Tracks" + req.query.query, async (err, reply) => {
+    if (reply) {
+      console.log("Sending from cache.");
+      const array = JSON.parse(reply);
+      res.json({ array });
+    } else {
+      const result = await axios.post(
+        "https://tubemusicsearch.herokuapp.com/get_playlist/",
+        {
+          browseid: req.query.query,
+        }
+      );
+      const array = result.data;
+      res.json({ array });
+      client.setex("Tracks" + req.query.query, 3600, JSON.stringify(array));
+      array.tracks.forEach(async (track) => {
+        /* console.log(track); */
+        if (!track.videoId) return;
+        const song = await Song.findOne({ videoId: track.videoId });
+        if (song && Math.random() > 0.8) {
+          song.duration = track.duration;
+          song.title = track.title;
+          song.thumbnail = track.thumbnails[0].url;
+          song.thumbnails = track.thumbnails;
+          song.album = track.album;
+          song.artists = track.artists;
+          song.uniqueId = Math.random() + track.videoId;
+          song.resultType = "song";
+          song.save().then(() => console.log("Saved"));
+        }
+        if (!song) {
+          let newsong = new Song({
+            title: track.title,
+            uniqueId: Math.random() + track.videoId,
+            videoId: track.videoId,
+            duration: track.duration,
+            thumbnail: track.thumbnails[0].url,
+            thumbnails: track.thumbnails,
+            album: track.album,
+            artists: track.artists,
+            resultType: "song",
+          });
+          newsong.save().then(() => console.log("New song saved"));
+        }
+      });
     }
-  );
-
-  const array = result.data;
-  res.json({ array });
+  });
 };
 exports.getAlbum = async function (req, res, next) {
   if (!req.query.query) return res.json({ error: "Error" });
-  client.get(req.query.query, async function (err, reply) {
+  client.get("Album" + req.query.query, async (err, reply) => {
     if (reply) {
       console.log("Sending from cache");
       const array = JSON.parse(reply);
@@ -443,21 +488,21 @@ exports.getAlbum = async function (req, res, next) {
       );
 
       const array = result.data;
-      client.setex(req.query.query, 3600, JSON.stringify(array));
+      client.setex("Album" + req.query.query, 3600, JSON.stringify(array));
       res.json({ array });
       array.tracks.forEach(async (track) => {
         if (!track.videoId) return;
         const song = await Song.findOne({ videoId: track.videoId });
-        if (song) {
+        if (song && Math.random() > 0.8) {
           song.title = track.title;
           song.thumbnail = track.thumbnails[0].url;
           song.thumbnails = track.thumbnails;
           song.album = { name: array.title, id: req.query.query };
-          song.artists = array.artist;
+          if (array.artist[0] && array.artist[0].name)
+            song.artists = array.artist;
           song.uniqueId = Math.random() + track.title;
           song.resultType = "song";
-          song.save();
-          /*   console.log(song.album); */
+          song.save().then(() => console.log("Saved"));
         }
         if (!song) {
           let newsong = new Song({
@@ -471,7 +516,7 @@ exports.getAlbum = async function (req, res, next) {
             artists: array.artist,
             resultType: "song",
           });
-          newsong.save();
+          newsong.save().then(() => console.log("New song saved"));
         }
       });
     }

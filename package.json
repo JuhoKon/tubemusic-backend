@@ -11,6 +11,7 @@
     "bcrypt": "^5.0.0",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.7.2",
+    "bull": "^3.18.0",
     "cheerio": "^1.0.0-rc.3",
     "clean-css": ">=4.1.11",
     "cookie-parser": "~1.4.4",
@@ -24,7 +25,7 @@
     "iconv-lite": "^0.6.2",
     "jsonwebtoken": "^8.5.1",
     "minimist": ">=1.2.3",
-    "mongoose": "^5.8.9",
+    "mongoose": "^5.10.0",
     "morgan": "~1.9.1",
     "nodemon": "^2.0.2",
     "promise.allsettled": "^1.0.2",
@@ -32,7 +33,8 @@
     "redis": "^3.0.2",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
-    "string-similarity": "^4.0.1"
+    "string-similarity": "^4.0.1",
+    "throng": "^4.0.0"
   },
   "main": "app.js",
   "devDependencies": {},

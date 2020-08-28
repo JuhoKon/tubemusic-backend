@@ -31,10 +31,10 @@ songSchema.index(
   { title: "text", term: "text", "artists.name": "text", "album.name": "text" },
   {
     weights: {
-      title: 1,
-      term: 1,
-      artists: 1,
-      album: 5,
+      title: 50,
+      term: 5,
+      artists: 10,
+      album: 10,
     },
   }
 );
