@@ -45,10 +45,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 var mongoURL = process.env.MONGO_URL;
-//var mongoURL =
-//  "mongodb+srv://newuser123:jtLiGwVrgP2C9rNl@cluster0-n7w4j.mongodb.net/test?retryWrites=true&w=majority";
-// Connecting to mongoose
-//console.log(mongoURL);
+
 mongoose.connect(mongoURL, {
   useNewUrlParser: true,
   useCreateIndex: true,
@@ -62,13 +59,7 @@ db.on(
   console.log.bind(console, "MongoDB connection successful: " + mongoURL)
 );
 mongoose.set("useFindAndModify", false);
-/*  */
 
-/* let Queue = require("bull");
-let REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
-let workQueue = new Queue("work", REDIS_URL); */
-
-/* */
 app.set("trust proxy", 1);
 // view engine setup
 app.use("/", indexRouter);
@@ -91,9 +82,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render("error");
 });
-/* workQueue.add({ url: "https://www.heroku.com" }); */
-/* workQueue.on("global:completed", (jobId, result) => {
-  console.log(`Job completed with result ${result}`);
-}); */
+
 
 module.exports = app;
