@@ -3,11 +3,11 @@ require("dotenv").config();
 const jwtSecret = process.env.JWTSECRET || "asd123";
 
 function auth(req: any, res: any, next: any) {
-  //get token from header
+  // get token from header
 
   const token = req.header("x-auth-token");
 
-  //checking for token
+  // checking for token
   if (!token) {
     return res.status(401).json({ msg: "No token, authorization denied." });
   }
@@ -16,7 +16,7 @@ function auth(req: any, res: any, next: any) {
     const decoded = jwt.verify(token, jwtSecret);
     // Add user from payload
     req.user = decoded;
-    next(); //call next piece of middleware
+    next(); // call next piece of middleware
   } catch (e) {
     return res.status(402).json({ msg: "Token is not valid." });
   }

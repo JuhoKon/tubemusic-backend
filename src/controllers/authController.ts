@@ -16,20 +16,20 @@ export const auth = function (req: any, res: any, next: any) {
     if (!user) {
       return res.status(400).json({ msg: "User doesn't exist" });
     }
-    //password validation
+    // password validation
     bcrypt.compare(password, user.password).then((isCorrect: any) => {
       if (!isCorrect)
         return res.status(400).json({ msg: "Invalid credentials" });
-      //signing jwt
+      // signing jwt
       jwt.sign(
         { id: user.id, role: user.role },
         jwtSecret,
-        //get secret from config-file
-        { expiresIn: "2h" }, //set to expire in 15mins
+        // get secret from config-file
+        { expiresIn: "2h" }, // set to expire in 15mins
         (err, token) => {
           if (err) throw err;
           res.json({
-            //respond with token and and user info
+            // respond with token and and user info
             token,
             user: {
               _id: user.id,
@@ -45,24 +45,24 @@ export const auth = function (req: any, res: any, next: any) {
   });
 };
 export const findUser = function (req: any, res: any, next: any) {
-  //console.log(req.user);
+  // console.log(req.user);
   User.findById(req.user.id)
-    .select("-password") //return everything but password
+    .select("-password") // return everything but password
     .then((user) => res.json(user));
 };
 export const renew = function (req: any, res: any, next: any) {
   User.findById(req.user.id)
-    .select("-password") //return everything but password
+    .select("-password") // return everything but password
     .then((user: any) => {
       jwt.sign(
         { id: user.id, role: user.role },
         jwtSecret,
-        //get secret from config-file
-        { expiresIn: "2h" }, //set to expire in 15mins
+        // get secret from config-file
+        { expiresIn: "2h" }, // set to expire in 15mins
         (err, token) => {
           if (err) throw err;
           res.json({
-            //respond with token and and user info
+            // respond with token and and user info
             token,
             user: {
               _id: user.id,

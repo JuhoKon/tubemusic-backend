@@ -1,16 +1,16 @@
 import express from "express";
-var router = express.Router();
+const router = express.Router();
 import * as playlist_controller from "../controllers/playlistController";
 
 import auth from "../middleware/auth";
 /* GET users listing. */
-router.get("/", auth, playlist_controller.index); //ADMIN
+router.get("/", auth, playlist_controller.index); // ADMIN
 router.delete(
   "/delete/:id",
   auth,
   playlist_controller.deletebyID,
   playlist_controller.deletebyIDHelper
-); //ADMIN
+); // ADMIN
 
 router.post("/create", auth, playlist_controller.create);
 

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
-var playlistSchema = new Schema(
+const playlistSchema = new Schema(
   {
     name: { type: String, required: true },
     owner: { type: String, required: true },

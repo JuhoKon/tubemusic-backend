@@ -35,7 +35,7 @@ const handleScrape = async (
 };
 
 export const searchScrape = async function (req: any, res: any, next: any) {
-  //console.log(req.query.term);
+  // console.log(req.query.term);
   if (!req.query.item) return res.json({ error: "Error" });
   const reply = await RedisInstance.getValue("Searchyt" + req.query.item);
   if (reply) {
@@ -60,8 +60,8 @@ export const searchScrape = async function (req: any, res: any, next: any) {
 };
 
 export const scrape = async function (req: any, res: any, next: any) {
-  let tracks = req.body.items;
-  let promises: any = [];
+  const tracks = req.body.items;
+  const promises: any = [];
 
   console.log(tracks.length);
   for (let i = 0; i < tracks.length; i++) {
@@ -103,7 +103,7 @@ export const autoCompleteYouTube = async function (
 ) {
   const item = req.query.item;
 
-  let response = await axios.get(
+  const response = await axios.get(
     `https://clients1.google.com/complete/search?client=youtube&gs_ri=youtube&ds=yt&q=${item}`,
     { responseType: "arraybuffer" }
   );

@@ -1,5 +1,5 @@
 import express from "express";
-var router = express.Router();
+const router = express.Router();
 import auth from "../middleware/auth";
 import * as authController from "../controllers/authController";
 import rateLimit from "express-rate-limit";
@@ -16,7 +16,7 @@ const loginLimiter = rateLimit({
 
 router.post("/", loginLimiter, authController.auth);
 
-router.get("/user", auth, authController.findUser); //returns ALL info about user made
+router.get("/user", auth, authController.findUser); // returns ALL info about user made
 router.get("/renew", auth, authController.renew);
 
 export default router;

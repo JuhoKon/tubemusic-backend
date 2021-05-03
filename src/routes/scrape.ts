@@ -1,5 +1,5 @@
 import express from "express";
-var router = express.Router();
+const router = express.Router();
 import * as scrape_controller from "../controllers/scrapeController";
 import auth from "../middleware/auth";
 
