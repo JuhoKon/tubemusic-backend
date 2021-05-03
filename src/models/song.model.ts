@@ -1,4 +1,4 @@
-var mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 var Schema = mongoose.Schema;
 
@@ -38,4 +38,4 @@ songSchema.index(
     },
   }
 );
-module.exports = mongoose.model("Song", songSchema);
+export default mongoose.model("Song", songSchema);

@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const jwtSecret = process.env.JWTSECRET;
+const jwtSecret = process.env.JWTSECRET || "asd123";
 
-function auth(req, res, next) {
+function auth(req: any, res: any, next: any) {
   //get token from header
 
   const token = req.header("x-auth-token");
@@ -22,5 +22,4 @@ function auth(req, res, next) {
   }
 }
 
-module.exports = auth;
-//This middleware is called from the routes
+export default auth;
