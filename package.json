@@ -39,7 +39,8 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "string-similarity": "^4.0.1",
-    "throng": "^4.0.0"
+    "throng": "^4.0.0",
+    "tsc": "^1.20150623.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
