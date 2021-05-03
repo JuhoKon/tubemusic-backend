@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
-var songSchema = new Schema(
+const songSchema = new Schema(
   {
     title: { type: String, required: true },
     uniqueId: { type: String, required: true },

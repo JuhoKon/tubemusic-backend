@@ -2,7 +2,7 @@ import SRedis from "../DAL/RedisInstance";
 import Playlist from "../models/playlist.model";
 import User from "../models/user.model";
 
-const redis = require("redis"); //Cache
+const redis = require("redis"); // Cache
 
 const RedisInstance = SRedis.getInstance();
 
@@ -10,14 +10,14 @@ export const index = function (req: any, res: any, next: any) {
   Playlist.find()
     .select("-playlist")
     .then((Playlist: any) => {
-      //console.log(Playlist);
-      res.json({ Playlist: Playlist });
-    }) //return playlists name + id
+      // console.log(Playlist);
+      res.json({ Playlist });
+    }) // return playlists name + id
     .catch((err: any) => res.status(400).json("Error: " + err));
 };
 export const create = function (req: any, res: any, next: any) {
-  //console.log(req.body.playlist);
-  var playlist = new Playlist({
+  // console.log(req.body.playlist);
+  const playlist = new Playlist({
     name: req.body.name,
     playlist: req.body.playlist,
     private: req.body.isPrivate,
@@ -32,7 +32,7 @@ export const create = function (req: any, res: any, next: any) {
     .catch((err: any) => res.status(400).json(err));
 };
 export const findByID = async function (req: any, res: any, next: any) {
-  //console.log(req.params.id);
+  // console.log(req.params.id);
   if (!req.params.id) {
     return res.status(400).json({ error: "Id not submitted" });
   }
@@ -52,7 +52,7 @@ export const updatebyID = async function (req: any, res: any, next: any) {
   if (!req.body.name || !req.body.playlist) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
-  //console.log(req.body);
+  // console.log(req.body);
 
   Playlist.findById(req.params.id).then((playlist: any) => {
     (playlist.name = req.body.name),
@@ -97,7 +97,7 @@ export const updatetime = function (req: any, res: any, next: any) {
         break;
       }
     }
-    playlist.markModified("playlist"); //very important.....
+    playlist.markModified("playlist"); // very important.....
     playlist.save().then(res.json({ status: "OK" }));
   });
 };
@@ -107,7 +107,7 @@ export const deletebyID = function (req: any, res: any, next: any) {
       .status(401)
       .json({ msg: "Authorization denied. Insufficient role" });
   }
-  Playlist.findByIdAndDelete(req.params.id) //delete actual post from the database
+  Playlist.findByIdAndDelete(req.params.id) // delete actual post from the database
     .then(() => {
       RedisInstance.deleteKey("Playlist" + req.params.id);
       next();

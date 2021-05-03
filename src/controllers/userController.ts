@@ -17,21 +17,21 @@ export const index = function (req: any, res: any, next: any) {
 };
 // Handle create on POST.
 export const create = function (req: any, res: any, next: any) {
-  var resSent = false; //logic to prevent sending headers twice
+  let resSent = false; // logic to prevent sending headers twice
   const email = req.body.email;
   const name = req.body.name;
-  //validation is done in middleware, but double checking here
-  //(uservalidator.js)
+  // validation is done in middleware, but double checking here
+  // (uservalidator.js)
   if (!req.body.name || !req.body.email || !req.body.password) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
-  //Check if there's an entry with the email
-  User.findOne({ email: email })
+  // Check if there's an entry with the email
+  User.findOne({ email })
     .then((user) => {
       if (user) {
         if (!resSent) {
-          //Some logic so we don't set headers after they are sent to client
-          //in case email and username are both taken.
+          // Some logic so we don't set headers after they are sent to client
+          // in case email and username are both taken.
           resSent = true;
           return res.status(400).json({
             error: "The email already exists. Please use a different email",
@@ -40,13 +40,13 @@ export const create = function (req: any, res: any, next: any) {
       }
     })
     .catch((err) => res.status(400).json("Error: " + err));
-  //Check if there's an entry with the username
-  User.findOne({ name: name })
+  // Check if there's an entry with the username
+  User.findOne({ name })
     .then((user) => {
       if (user) {
         if (!resSent) {
-          //Some logic so we don't set headers after they are sent to client
-          //in case email and username are both taken.
+          // Some logic so we don't set headers after they are sent to client
+          // in case email and username are both taken.
           resSent = true;
           return res.status(400).json({
             error:
@@ -56,8 +56,8 @@ export const create = function (req: any, res: any, next: any) {
       }
     })
     .catch((err) => res.status(400).json("Error: " + err));
-  //Actual functionality, checks if theres a match either in email or name and creates user if not
-  User.findOne({ $or: [{ email: email }, { name: name }] })
+  // Actual functionality, checks if theres a match either in email or name and creates user if not
+  User.findOne({ $or: [{ email }, { name }] })
     .then((user: any) => {
       if (user) {
       } else {
@@ -73,17 +73,17 @@ export const create = function (req: any, res: any, next: any) {
         bcrypt.genSalt(10, (err, salt) => {
           bcrypt.hash(user.password, salt, (err, hash) => {
             if (err) throw err;
-            user.password = hash; //save hashed password to DB
+            user.password = hash; // save hashed password to DB
             user.save().then((user: any) => {
               jwt.sign(
-                //make token for the user
+                // make token for the user
                 { id: user.id },
-                jwtSecret, //get secret from config file
-                { expiresIn: "1h" }, //set to expire in hour
+                jwtSecret, // get secret from config file
+                { expiresIn: "1h" }, // set to expire in hour
                 (err, token) => {
                   if (err) throw err;
                   res.json({
-                    //return made token with the userinfo
+                    // return made token with the userinfo
                     token,
                     user: {
                       _id: user.id,
@@ -115,7 +115,7 @@ export const addPlaylist = function (req: any, res: any, next: any) {
   }
   User.findById(req.user.id)
     .then((user: any) => {
-      //console.log(user);
+      // console.log(user);
       user.playlists.unshift({
         _id: req.body.playlistId,
         name: req.body.playlistName,
@@ -124,7 +124,7 @@ export const addPlaylist = function (req: any, res: any, next: any) {
         createdAt: req.body.createdAt,
       });
       user
-        .save() //attempt to save the user
+        .save() // attempt to save the user
         .then(() => res.json(user.playlists))
         .catch((err: any) => res.status(400).json("Error: " + err));
     })
@@ -147,7 +147,7 @@ export const removePlaylist = function (req: any, res: any, next: any) {
   );
 };
 export const editPlaylist = function (req: any, res: any, next: any) {
-  //console.log(req.body.playlistName);
+  // console.log(req.body.playlistName);
   if (!req.body.playlistName) {
     return res.status(400).json({
       error: "No playlist name provided.",
@@ -160,7 +160,7 @@ export const editPlaylist = function (req: any, res: any, next: any) {
         user.playlists[i].private = req.body.private;
       }
     }
-    user.markModified("playlists"); //very important.....
+    user.markModified("playlists"); // very important.....
     user.save().then(res.json({ status: "OK" }));
   });
 };

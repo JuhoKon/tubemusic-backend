@@ -10,12 +10,12 @@ import Promise from "bluebird";
 import dotenv from "dotenv";
 dotenv.config();
 
-var app = express();
+const app = express();
 
-var whitelist = ["https://localhost:3000"];
+const whitelist = ["https://localhost:3000"];
 
-var corsOptions = {
-  origin: function (origin: any, callback: any) {
+const corsOptions = {
+  origin(origin: any, callback: any) {
     console.log(origin);
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true);
@@ -82,7 +82,7 @@ app.use(function (err: any, req: any, res: any, next: any) {
   res.json({ error: "Erroria pukkaa." });
 });
 
-var port = process.env.PORT || "8080";
+const port = process.env.PORT || "8080";
 
 app.listen(port, () => {
   console.log(`BE listening at http://localhost:${port}`);
