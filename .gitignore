@@ -62,3 +62,7 @@ typings/
 #
 .env
 worker/
+
+
+.env
+dist/

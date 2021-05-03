@@ -1,19 +1,21 @@
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
-var mongoose = require("mongoose");
-var cors = require("cors");
-var bodyParser = require("body-parser");
-var Promise = require("bluebird");
-require("dotenv").config();
+import createError from "http-errors";
+import express from "express";
+import path from "path";
+import cookieParser from "cookie-parser";
+import logger from "morgan";
+import mongoose from "mongoose";
+import cors from "cors";
+import bodyParser from "body-parser";
+import Promise from "bluebird";
+import dotenv from "dotenv";
+dotenv.config();
+
 var app = express();
 
 var whitelist = ["https://localhost:3000"];
 
 var corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin: any, callback: any) {
     console.log(origin);
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true);
@@ -23,19 +25,16 @@ var corsOptions = {
   },
 };
 
-require("dotenv").config();
-
 // Then pass them to cors:
 app.use(cors());
 
-var indexRouter = require("./routes/index");
-var playlistsRouter = require("./routes/playlists");
-var scrapeRouter = require("./routes/scrape");
-var usersRouter = require("./routes/users");
-var authRouter = require("./routes/auth");
+import indexRouter from "./routes/index";
 
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "pug");
+import playlistsRouter from "./routes/playlists";
+import scrapeRouter from "./routes/scrape";
+import usersRouter from "./routes/users";
+import authRouter from "./routes/auth";
+
 app.use(logger("dev"));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -44,7 +43,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-var mongoURL = process.env.MONGO_URL;
+const mongoURL = process.env.MONGO_URL;
 
 mongoose.connect(mongoURL, {
   useNewUrlParser: true,
@@ -52,7 +51,7 @@ mongoose.connect(mongoURL, {
   useUnifiedTopology: true,
 });
 mongoose.Promise = Promise;
-var db = mongoose.connection;
+const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.on(
   "open",
@@ -73,15 +72,20 @@ app.use(function (req, res, next) {
 });
 
 // error handler
-app.use(function (err, req, res, next) {
+app.use(function (err: any, req: any, res: any, next: any) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
   // render the error page
   res.status(err.status || 500);
-  res.render("error");
+  res.json({ error: "Erroria pukkaa." });
 });
 
+var port = process.env.PORT || "8080";
 
-module.exports = app;
+app.listen(port, () => {
+  console.log(`BE listening at http://localhost:${port}`);
+});
+
+export default app;

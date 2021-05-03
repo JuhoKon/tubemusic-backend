@@ -1,4 +1,4 @@
-var mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 var Schema = mongoose.Schema;
 
@@ -15,4 +15,4 @@ var playlistSchema = new Schema(
   }
 );
 
-module.exports = mongoose.model("playlist", playlistSchema);
+export default mongoose.model("playlist", playlistSchema);

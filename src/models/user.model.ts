@@ -1,5 +1,4 @@
-var mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 var userSchema = new Schema(
@@ -9,29 +8,29 @@ var userSchema = new Schema(
       required: true,
       trim: true,
       minlength: 3,
-      unique: true
+      unique: true,
     },
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
       required: true,
-      minlength: 8
+      minlength: 8,
     },
     role: {
       type: String,
-      required: true
+      required: true,
     },
     playlists: {
-      type: Array
-    }
+      type: Array,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema);

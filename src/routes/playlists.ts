@@ -1,8 +1,8 @@
-var express = require("express");
+import express from "express";
 var router = express.Router();
-var playlist_controller = require("../controllers/playlistController");
+import * as playlist_controller from "../controllers/playlistController";
 
-var auth = require("../middleware/auth");
+import auth from "../middleware/auth";
 /* GET users listing. */
 router.get("/", auth, playlist_controller.index); //ADMIN
 router.delete(
@@ -18,4 +18,4 @@ router.get("/find/:id", auth, playlist_controller.findByID);
 router.put("/update/:id", auth, playlist_controller.updatebyID);
 router.put("/additem/:id", auth, playlist_controller.addSongToPlayList);
 router.put("/updatetime/:id", auth, playlist_controller.updatetime);
-module.exports = router;
+export default router;

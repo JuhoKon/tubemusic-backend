@@ -1,10 +1,10 @@
-const User = require("../models/user.model");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import User from "../models/user.model";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 require("dotenv").config();
 const jwtSecret = process.env.JWTSECRET;
 
-exports.index = function (req, res, next) {
+export const index = function (req: any, res: any, next: any) {
   if (req.user.role !== "Admin") {
     return res
       .status(401)
@@ -12,11 +12,11 @@ exports.index = function (req, res, next) {
   }
   User.find()
     .select("name")
-    .then((users) => res.json(users))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((users: any) => res.json(users))
+    .catch((err: any) => res.status(400).json("Error: " + err));
 };
 // Handle create on POST.
-exports.create = function (req, res, next) {
+export const create = function (req: any, res: any, next: any) {
   var resSent = false; //logic to prevent sending headers twice
   const email = req.body.email;
   const name = req.body.name;
@@ -58,23 +58,23 @@ exports.create = function (req, res, next) {
     .catch((err) => res.status(400).json("Error: " + err));
   //Actual functionality, checks if theres a match either in email or name and creates user if not
   User.findOne({ $or: [{ email: email }, { name: name }] })
-    .then((user) => {
+    .then((user: any) => {
       if (user) {
       } else {
-        var user = new User({
+        const user = new User({
           name: req.body.name,
           email: req.body.email,
           password: req.body.password,
           age: req.body.age,
           role: req.body.role,
-        });
+        }) as any;
 
         // Create salt & hash
         bcrypt.genSalt(10, (err, salt) => {
           bcrypt.hash(user.password, salt, (err, hash) => {
             if (err) throw err;
             user.password = hash; //save hashed password to DB
-            user.save().then((user) => {
+            user.save().then((user: any) => {
               jwt.sign(
                 //make token for the user
                 { id: user.id },
@@ -102,7 +102,7 @@ exports.create = function (req, res, next) {
     })
     .catch((err) => res.status(400).json("Error: " + err));
 };
-exports.addPlaylist = function (req, res, next) {
+export const addPlaylist = function (req: any, res: any, next: any) {
   if (!req.body.playlistId) {
     return res.status(400).json({
       error: "No playlistid provided.",
@@ -114,7 +114,7 @@ exports.addPlaylist = function (req, res, next) {
     });
   }
   User.findById(req.user.id)
-    .then((user) => {
+    .then((user: any) => {
       //console.log(user);
       user.playlists.unshift({
         _id: req.body.playlistId,
@@ -126,11 +126,11 @@ exports.addPlaylist = function (req, res, next) {
       user
         .save() //attempt to save the user
         .then(() => res.json(user.playlists))
-        .catch((err) => res.status(400).json("Error: " + err));
+        .catch((err: any) => res.status(400).json("Error: " + err));
     })
     .catch((err) => res.status(400).json("Error: " + err));
 };
-exports.removePlaylist = function (req, res, next) {
+export const removePlaylist = function (req: any, res: any, next: any) {
   /* User.findById(req.user.id).then(user => {
     user.playlists.pull({ _id: "uniiekki" }).exec();
     user
@@ -146,14 +146,14 @@ exports.removePlaylist = function (req, res, next) {
     }
   );
 };
-exports.editPlaylist = function (req, res, next) {
+export const editPlaylist = function (req: any, res: any, next: any) {
   //console.log(req.body.playlistName);
   if (!req.body.playlistName) {
     return res.status(400).json({
       error: "No playlist name provided.",
     });
   }
-  User.findById(req.user.id).then((user) => {
+  User.findById(req.user.id).then((user: any) => {
     for (let i = 0; i < user.playlists.length; i++) {
       if (user.playlists[i]._id === req.params.id) {
         user.playlists[i].name = req.body.playlistName;

@@ -1,22 +1,23 @@
-var User = require("../models/user.model");
-var bcrypt = require("bcryptjs");
+import User from "../models/user.model";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-var jwt = require("jsonwebtoken");
 require("dotenv").config();
-const jwtSecret = process.env.JWTSECRET;
-exports.auth = function(req, res, next) {
+const jwtSecret = process.env.JWTSECRET || "asd123";
+
+export const auth = function (req: any, res: any, next: any) {
   const { email, password } = req.body;
 
   if (!req.body.email || !req.body.password) {
     return res.status(400).json({ msg: "Please enter all fields" });
   }
 
-  User.findOne({ email }).then(user => {
+  User.findOne({ email }).then((user: any) => {
     if (!user) {
       return res.status(400).json({ msg: "User doesn't exist" });
     }
     //password validation
-    bcrypt.compare(password, user.password).then(isCorrect => {
+    bcrypt.compare(password, user.password).then((isCorrect: any) => {
       if (!isCorrect)
         return res.status(400).json({ msg: "Invalid credentials" });
       //signing jwt
@@ -35,24 +36,24 @@ exports.auth = function(req, res, next) {
               name: user.name,
               email: user.email,
               age: user.age,
-              role: user.role
-            }
+              role: user.role,
+            },
           });
         }
       );
     });
   });
 };
-exports.findUser = function(req, res, next) {
+export const findUser = function (req: any, res: any, next: any) {
   //console.log(req.user);
   User.findById(req.user.id)
     .select("-password") //return everything but password
-    .then(user => res.json(user));
+    .then((user) => res.json(user));
 };
-exports.renew = function(req, res, next) {
+export const renew = function (req: any, res: any, next: any) {
   User.findById(req.user.id)
     .select("-password") //return everything but password
-    .then(user => {
+    .then((user: any) => {
       jwt.sign(
         { id: user.id, role: user.role },
         jwtSecret,
@@ -68,8 +69,8 @@ exports.renew = function(req, res, next) {
               name: user.name,
               email: user.email,
               age: user.age,
-              role: user.role
-            }
+              role: user.role,
+            },
           });
         }
       );

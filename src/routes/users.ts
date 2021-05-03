@@ -1,11 +1,8 @@
-var express = require("express");
+import express from "express";
 var router = express.Router();
-var userController = require("../controllers/userController");
-var {
-  userValidationRules,
-  uservalidate
-} = require("../middleware/uservalidator.js");
-var auth = require("../middleware/auth");
+import * as userController from "../controllers/userController";
+import { userValidationRules, uservalidate } from "../middleware/uservalidator";
+import auth from "../middleware/auth";
 
 router.get("/", auth, userController.index); //ADMIN
 //TODO: ADD DELETE USER
@@ -19,4 +16,4 @@ router.post(
 router.put("/addPlaylist", auth, userController.addPlaylist);
 router.delete("/deletePlaylist:id", auth, userController.removePlaylist);
 router.put("/editPlaylist:id", auth, userController.editPlaylist);
-module.exports = router;
+export default router;

@@ -1,26 +1,21 @@
-var Playlist = require("../models/playlist.model");
-var User = require("../models/user.model");
+import SRedis from "../DAL/RedisInstance";
+import Playlist from "../models/playlist.model";
+import User from "../models/user.model";
 
 const redis = require("redis"); //Cache
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-const client = redis.createClient(REDIS_URL);
-client.on("error", (err) => {
-  console.log("Error " + err);
-});
-client.on("connect", function () {
-  console.log("You are now connected");
-});
 
-exports.index = function (req, res, next) {
+const RedisInstance = SRedis.getInstance();
+
+export const index = function (req: any, res: any, next: any) {
   Playlist.find()
     .select("-playlist")
-    .then((Playlist) => {
+    .then((Playlist: any) => {
       //console.log(Playlist);
       res.json({ Playlist: Playlist });
     }) //return playlists name + id
-    .catch((err) => res.status(400).json("Error: " + err));
+    .catch((err: any) => res.status(400).json("Error: " + err));
 };
-exports.create = function (req, res, next) {
+export const create = function (req: any, res: any, next: any) {
   //console.log(req.body.playlist);
   var playlist = new Playlist({
     name: req.body.name,
@@ -31,42 +26,35 @@ exports.create = function (req, res, next) {
   });
   playlist
     .save()
-    .then((data) => {
+    .then((data: any) => {
       res.json(data);
     })
-    .catch((err) => res.status(400).json(err));
+    .catch((err: any) => res.status(400).json(err));
 };
-exports.findByID = function (req, res, next) {
+export const findByID = async function (req: any, res: any, next: any) {
   //console.log(req.params.id);
   if (!req.params.id) {
     return res.status(400).json({ error: "Id not submitted" });
   }
-  client.get("Playlist" + req.params.id, async function (err, reply) {
-    if (reply) {
-      console.log("Found from cache");
-      const playlist = JSON.parse(reply);
+  const reply = await RedisInstance.getValue("Playlist" + req.params.id);
+  if (reply) {
+    console.log("Found from cache");
+    const playlist = reply;
+    res.json(playlist);
+  } else {
+    Playlist.findById(req.params.id).then((playlist: any) => {
       res.json(playlist);
-    } else {
-      Playlist.findById(req.params.id)
-        .then((playlist) => {
-          res.json(playlist);
-          client.setex(
-            "Playlist" + req.params.id,
-            3600,
-            JSON.stringify(playlist)
-          );
-        })
-        .catch((err) => res.status(400).json("Error:" + err));
-    }
-  });
+      RedisInstance.setKey("Playlist" + req.params.id, playlist);
+    });
+  }
 };
-exports.updatebyID = async function (req, res, next) {
+export const updatebyID = async function (req: any, res: any, next: any) {
   if (!req.body.name || !req.body.playlist) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
   //console.log(req.body);
 
-  Playlist.findById(req.params.id).then((playlist) => {
+  Playlist.findById(req.params.id).then((playlist: any) => {
     (playlist.name = req.body.name),
       (playlist.playlist = req.body.playlist),
       (playlist.private = req.body.private),
@@ -75,41 +63,33 @@ exports.updatebyID = async function (req, res, next) {
       .save()
       .then(() => {
         res.json(playlist);
-        client.setex(
-          "Playlist" + req.params.id,
-          3600,
-          JSON.stringify(playlist)
-        );
+        RedisInstance.setKey("Playlist" + req.params.id, playlist);
       })
-      .catch((err) => res.status(400).json({ error: err }));
+      .catch((err: any) => res.status(400).json({ error: err }));
   });
   // console.log(req.params.id);
 };
-exports.addSongToPlayList = function (req, res, next) {
+export const addSongToPlayList = function (req: any, res: any, next: any) {
   if (!req.params.id || !req.body.track) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
 
-  Playlist.findById(req.params.id).then((playlist) => {
+  Playlist.findById(req.params.id).then((playlist: any) => {
     playlist.playlist.push(req.body.track);
     playlist
       .save()
       .then(() => {
         res.json(playlist);
-        client.setex(
-          "Playlist" + req.params.id,
-          3600,
-          JSON.stringify(playlist)
-        );
+        RedisInstance.setKey("Playlist" + req.params.id, playlist);
       })
-      .catch((err) => res.status(400).json({ error: err }));
+      .catch((err: any) => res.status(400).json({ error: err }));
   });
 };
-exports.updatetime = function (req, res, next) {
+export const updatetime = function (req: any, res: any, next: any) {
   if (!req.body.videoId || !req.body.duration) {
     return res.status(400).json({ error: "Please enter all fields" });
   }
-  Playlist.findById(req.params.id).then((playlist) => {
+  Playlist.findById(req.params.id).then((playlist: any) => {
     for (let i = 0; i < playlist.playlist.length; i++) {
       if (playlist.playlist[i].videoId === req.body.videoId) {
         console.log(playlist.playlist[i].duration);
@@ -121,7 +101,7 @@ exports.updatetime = function (req, res, next) {
     playlist.save().then(res.json({ status: "OK" }));
   });
 };
-exports.deletebyID = function (req, res, next) {
+export const deletebyID = function (req: any, res: any, next: any) {
   if (req.user.role !== "Admin") {
     return res
       .status(401)
@@ -129,16 +109,16 @@ exports.deletebyID = function (req, res, next) {
   }
   Playlist.findByIdAndDelete(req.params.id) //delete actual post from the database
     .then(() => {
-      client.del("Playlist" + req.params.id);
+      RedisInstance.deleteKey("Playlist" + req.params.id);
       next();
     })
-    .catch((err) => res.status(400).json({ error: err }));
+    .catch((err: any) => res.status(400).json({ error: err }));
 };
-exports.deletebyIDHelper = function (req, res, next) {
+export const deletebyIDHelper = function (req: any, res: any, next: any) {
   User.updateMany(
     {},
     { $pull: { playlists: { _id: req.params.id } } },
-    function (err, data) {
+    function (err: any, data: any) {
       if (err) return res.status(400).json({ error: err });
       res.json("Playlist deleted.");
     }
