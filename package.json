@@ -8,9 +8,9 @@
     "prestart": "npm run build",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "devstart": "nodemon app.js"
+    "devstart": "nodemon app.js",
+    "tsc": "tsc"
   },
-  "tsc": "tsc",
   "dependencies": {
     "axios": "^0.21.1",
     "bcrypt": "^5.0.0",
