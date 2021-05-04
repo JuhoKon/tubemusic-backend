@@ -66,7 +66,7 @@ export const create = function (req: any, res: any, next: any) {
           email: req.body.email,
           password: req.body.password,
           age: req.body.age,
-          role: req.body.role,
+          role: "User",
         }) as any;
 
         // Create salt & hash
