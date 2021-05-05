@@ -58,7 +58,7 @@ export const renew = function (req: any, res: any, next: any) {
         { id: user.id, role: user.role },
         jwtSecret,
         // get secret from config-file
-        { expiresIn: "2h" }, // set to expire in 15mins
+        { expiresIn: "240h" }, // set to expire in 10 days
         (err, token) => {
           if (err) throw err;
           res.json({
