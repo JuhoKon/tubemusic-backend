@@ -10,8 +10,8 @@ import rateLimit from "express-rate-limit";
 
 const loginLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 min
-  max: 10, // start blocking after 10 reqs
-  message: "Too many logins on this ip.",
+  max: 20, // start blocking after 10 reqs
+  message: "Too many requests on this ip.",
 });
 
 router.post("/", loginLimiter, authController.auth);
