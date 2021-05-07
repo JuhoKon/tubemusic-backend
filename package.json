@@ -4,13 +4,13 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "postinstall": "tsc",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "devstart": "nodemon app.js",
     "build": "tsc"
   },
   "dependencies": {
+    "@types/ws": "^7.4.2",
     "axios": "^0.21.1",
     "bcrypt": "^5.0.0",
     "bcryptjs": "^2.4.3",
@@ -38,7 +38,8 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "string-similarity": "^4.0.1",
-    "throng": "^4.0.0"
+    "throng": "^4.0.0",
+    "ws": "^7.4.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",

@@ -8,10 +8,7 @@
     "sourceMap": true,
     "outDir": "dist",
     "noImplicitUseStrict": false,
-    "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["src/**/*"]
 }

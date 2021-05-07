@@ -8,6 +8,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import Promise from "bluebird";
 import dotenv from "dotenv";
+import * as http from "http";
+
 dotenv.config();
 
 const app = express();
@@ -34,6 +36,7 @@ import playlistsRouter from "./routes/playlists";
 import scrapeRouter from "./routes/scrape";
 import usersRouter from "./routes/users";
 import authRouter from "./routes/auth";
+import initWebSocket from "./wsserver";
 
 app.use(logger("dev"));
 app.use(express.urlencoded({ extended: false }));
@@ -84,8 +87,12 @@ app.use(function (err: any, req: any, res: any, next: any) {
 
 const port = process.env.PORT || "8080";
 
-app.listen(port, () => {
+//initialize a simple http server
+const server = http.createServer(app);
+
+server.listen(port, () => {
   console.log(`BE listening at http://localhost:${port}`);
 });
 
+initWebSocket(server);
 export default app;
