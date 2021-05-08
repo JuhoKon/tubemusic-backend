@@ -16,7 +16,8 @@ const handleScrape = async (
   const array = result.data;
   let url = "";
   if (array[0] && array[0].thumbnails) {
-    url = array[0].thumbnails[0].url;
+    const lastElement = array[0].thumbnails[array[0].thumbnails.length - 1];
+    url = lastElement.url; // Highest quality
   }
   return array[0]
     ? {
