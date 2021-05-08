@@ -46,7 +46,8 @@ export const searchScrape = async function (req: any, res: any, next: any) {
     });
     const array = result.data;
     array.forEach((element: any) => {
-      element.thumbnail = element.thumbnails[0].url;
+      const lastThumbnail = element.thumbnails.pop();
+      element.thumbnail = lastThumbnail.url;
       element.uniqueId = Math.random() + Date.now();
     });
     if (!array) {
