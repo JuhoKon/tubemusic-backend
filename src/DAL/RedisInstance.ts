@@ -34,11 +34,13 @@ class SRedis {
   }
 
   public setKey(id: string, value: any) {
-    this.redisClient.SETEX(id, CACHE_TTL_SECONDS, JSON.stringify(value));
+    //this.redisClient.SETEX(id, CACHE_TTL_SECONDS, JSON.stringify(value));
   }
 
   public async getValue(id: string): Promise<unknown> {
     return new Promise((resolve, reject) => {
+      resolve(null);
+      return;
       this.redisClient.GET(id, (err: Error, reply: string) => {
         if (reply) {
           resolve(JSON.parse(reply));
@@ -53,7 +55,7 @@ class SRedis {
   }
 
   public deleteKey(id: string) {
-    this.redisClient.DEL(id);
+    //this.redisClient.DEL(id);
   }
 }
 export default SRedis;
